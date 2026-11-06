@@ -86,26 +86,66 @@ for (rr in c(0.10, 0.155)) {
   lines(rr * cos(th3), cy + 0.175 + rr * sin(th3), col = "#7FD1C0", lwd = 3)
 }
 
-# ---------- 左下瓦片格(分幅意象,整体收进六边形) ----------
-tt <- 0.078
-gap <- 0.018
-gx0 <- -0.50; gy0 <- -0.34
-for (i in 0:2) for (j in 0:2) {
-  a <- gx0 + i * (tt + gap)
-  b <- gy0 - j * (tt + gap)
-  alpha <- 0.50 - 0.13 * j - 0.05 * i
-  rect(a, b - tt, a + tt, b,
-       col = adjustcolor("#9FE3D0", alpha.f = max(0.10, alpha)),
-       border = "#9FE3D0AA", lwd = 2)
+# ---------- 底部 5x5 瓦片马赛克(裁剪进六边形,作为包名背景) ----------
+# Sutherland-Hodgman 凸多边形裁剪:瓦片矩形 x 六边形
+cross2 <- function(u, v) u[1] * v[2] - u[2] * v[1]
+.clip_convex <- function(poly, clip) {
+  out <- poly
+  m <- nrow(clip)
+  for (i in seq_len(m)) {
+    a <- clip[i, ]; b <- clip[i %% m + 1, ]
+    e <- b - a
+    inp <- out
+    n <- nrow(inp)
+    out <- matrix(numeric(0), ncol = 2)
+    if (n == 0) break
+    for (j in seq_len(n)) {
+      p <- inp[j, ]; q <- inp[j %% n + 1, ]
+      sp <- cross2(e, p - a) >= 0
+      sq <- cross2(e, q - a) >= 0
+      if (sp) out <- rbind(out, p)
+      if (sp != sq) {
+        d <- q - p
+        denom <- cross2(d, e)
+        if (abs(denom) > 1e-12) {
+          t <- cross2(a - p, e) / denom
+          out <- rbind(out, p + t * d)
+        }
+      }
+    }
+    if (nrow(out) == 0) break
+  }
+  out
+}
+
+ts <- 0.30; gp <- 0.04
+total <- 5 * ts + 4 * gp
+x_left0 <- -total / 2
+y_top0 <- -0.27
+for (jx in 0:4) for (jy in 0:4) {
+  xa <- x_left0 + jx * (ts + gp)
+  ya <- y_top0 - jy * (ts + gp)
+  rect_poly <- rbind(
+    c(xa, ya), c(xa + ts, ya), c(xa + ts, ya - ts), c(xa, ya - ts)
+  )
+  clipped <- .clip_convex(rect_poly, v)
+  if (nrow(clipped) < 3) next
+  alpha <- max(0.07, 0.30 - 0.06 * jy - 0.02 * jx)
+  polygon(clipped[, 1], clipped[, 2],
+          col = adjustcolor("#9FE3D0", alpha.f = alpha),
+          border = adjustcolor("#9FE3D0", alpha.f = alpha * 1.5),
+          lwd = 2)
 }
 
 # ---------- 文本 ----------
 text(0, 0.64, "GLASS", cex = 4.6, font = 2, family = "sans", col = "#FFFFFF")
 text(0, 0.47, "Land Surface Satellite", cex = 1.5, font = 1, col = "#9FD8E8")
 
-# 包名:右下空白区,粗斜体 + 轻微倾斜,分两行
-text(0.28, -0.335, "glass.", cex = 2.5, font = 4, srt = -11, col = "#EAF7F2")
-text(0.24, -0.55, "sqdaitools", cex = 2.5, font = 4, srt = -11, col = "#EAF7F2")
+# 包名:单行粗斜体,直接叠在瓦片上,宽度自适应六边形
+nm <- "glass.sqdaitools"
+cex_n <- 2.6
+while (strwidth(nm, cex = cex_n, font = 4) > 1.54) cex_n <- cex_n - 0.05
+text(0, -0.425, nm, cex = cex_n, font = 4, col = "#FFFFFF")
 
 # ---------- 外边框 ----------
 polygon(vx, vy, border = "#8FD3E8", lwd = 16)
