@@ -1,0 +1,42 @@
+Package: glass.sqdaitools
+Type: Package
+Title: Tools for Downloading and Processing GLASS Land Surface Products
+Version: 0.1.0
+Authors@R: person(given = "Shaoqing", family = "Dai",
+    email = "dsq1993qingge@163.com", role = c("aut", "cre"))
+Description: Queries, downloads and post-processes products from the GLASS
+    (Global Land Surface Satellite) data archive at glass.hku.hk. Provides a
+    product registry with archive path templates and band metadata, mapping
+    of regions of interest onto the MODIS sinusoidal (h/v) tile grid of the
+    archive, composite DOY lookup for date ranges, a batch download engine
+    (built on 'httr2', with size verification, resume and retry), and
+    'terra'-based post-processing including fill values, reprojection,
+    multi-tile mosaics and temporal composites. Also ships an optional
+    interactive 'shiny'/'leaflet' download interface.
+License: MIT + file LICENSE
+URL: https://github.com/GISerDaiShaoqing/glass.sqdaitools,
+    https://giserdaishaoqing.github.io/glass.sqdaitools/
+BugReports: https://github.com/GISerDaiShaoqing/glass.sqdaitools/issues
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 4.1)
+Imports:
+    dplyr,
+    httr2,
+    rvest,
+    sf,
+    terra,
+    tibble
+Suggests:
+    shiny,
+    leaflet,
+    ggplot2,
+    tidyterra,
+    mapchina,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.0.0

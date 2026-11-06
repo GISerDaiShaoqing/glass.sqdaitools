@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+README.html
+Rplots.pdf
+*.Rcheck/
+data-raw/samples/
+dev/check/
+zcode/
+.zcode/
+glass_download_vi.R
+glass_process.R

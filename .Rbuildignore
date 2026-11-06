@@ -1,0 +1,13 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.Rhistory$
+^glass_download_vi\.R$
+^glass_process\.R$
+^data-raw$
+^dev$
+^\.github$
+^\.zcode$
+^LICENSE\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

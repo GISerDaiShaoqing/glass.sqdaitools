@@ -1,0 +1,76 @@
+url: https://giserdaishaoqing.github.io/glass.sqdaitools/
+
+template:
+  bootstrap: 5
+  lang: en
+
+logo:
+  src: man/figures/logo.png
+  alt: "glass.sqdaitools hex logo"
+
+navbar:
+  title: glass.sqdaitools
+  type: default
+  left:
+  - icon: fa-home
+    href: index.html
+    aria-label: Home
+  - text: "快速上手 / Get started"
+    menu:
+    - text: "快速上手(中文)"
+      href: articles/glass-quickstart-zh.html
+    - text: "Getting started (English)"
+      href: articles/glass-quickstart.html
+  - text: Reference
+    href: reference/index.html
+  right:
+  - icon: fa-github fa-lg
+    href: https://github.com/GISerDaiShaoqing/glass.sqdaitools
+    aria-label: GitHub
+
+articles:
+- title: 使用指南 / Guides
+  navbar: ~
+  contents:
+  - glass-quickstart
+  - glass-quickstart-zh
+
+reference:
+- title: "产品登记表 Registry"
+  desc: "浏览 GLASS 归档变体、命名片段与波段元数据。 Browse archive variants, naming fragments and band metadata."
+  contents:
+  - glass_registry
+  - glass_product_info
+  - get_glass_product_table
+- title: "瓦片与时间 Tiles & DOY"
+  desc: "研究区到 h/v 瓦片、日期区间到合成 DOY。 ROI-to-tile mapping and date range to composite folders."
+  contents:
+  - glass_tiles_for_bbox
+  - glass_tiles_for_sf
+  - glass_doys
+- title: "检索与下载 List & Download"
+  desc: "目录清单与带断点续传的批量下载。 Folder listings and resumable batch downloads."
+  contents:
+  - glass_list_files
+  - glass_download_file
+  - glass_download
+  - glass_fetch
+- title: "后处理 Post-processing"
+  desc: "填充值/比例因子处理、镶嵌、重投影与时间合成。 Fill/scale handling, mosaics, reprojection and composites."
+  contents:
+  - glass_read
+  - glass_mosaic
+  - glass_process
+- title: "交互界面 Interactive UI"
+  contents:
+  - glass_app
+- title: "内置数据集 Data"
+  desc: "瓦片查找表与产品登记表。 Tile lookup table and product registry."
+  contents:
+  - glass_tiles
+  - glass_products
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with

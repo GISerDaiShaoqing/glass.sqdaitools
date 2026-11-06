@@ -1,0 +1,131 @@
+---
+title: "快速上手 glass.sqdaitools(中文)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{快速上手 glass.sqdaitools(中文)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(glass.sqdaitools)
+```
+
+本教程走一遍 `glass.sqdaitools` 覆盖的 GLASS 数据全流程:产品登记表查询、
+研究区到瓦片的映射、日期到合成 DOY 的换算、批量下载与后处理。
+与数据集相关的代码块可离线运行;凡涉及网络的代码块均以 `eval = FALSE`
+展示,保证本教程在无网环境也能构建。
+英文版请见 `glass-quickstart`。
+
+## 产品登记表
+
+登记表对 GLASS 归档(<https://glass.hku.hk/archive/>)中的每个
+"归档变体"(产品 × 数据源 × 分辨率)记录一行:
+
+```{r}
+glass_registry(verified_only = TRUE)[, c("variant_id", "res", "cadence_days",
+                                         "observed_years", "url_root")]
+```
+
+`verified = TRUE` 的变体经过真实样例 granule 核验:文件命名片段
+(`code`、`version`、`layer`)、年份覆盖,以及波段元数据
+(`fill_value`、`scale_factor`、`valid_min/valid_max`)——
+后者会被 `glass_read()` / `glass_process()` 直接使用。
+
+按产品目录查看简表:
+
+```{r}
+glass_registry() |>
+  dplyr::group_by(product) |>
+  dplyr::summarise(
+    long_name  = dplyr::first(long_name),
+    n_variants = dplyr::n(),
+    .groups = "drop"
+  )
+```
+
+## 研究区 → 瓦片
+
+GLASS 分幅产品沿用 MODIS 正弦投影的 `h/v` 网格。函数会重建精确的
+瓦片多边形,告诉你研究区落在哪些瓦片上:
+
+```{r}
+# 上海人民广场周边 3 km 缓冲
+roi <- sf::st_buffer(
+  sf::st_sfc(sf::st_point(c(121.47, 31.23)), crs = 4326),
+  3000
+)
+tiles <- glass_tiles_for_sf(roi)
+tiles[, c("h", "v", "lon_min", "lon_max", "lat_min", "lat_max", "valid")]
+```
+
+给定的直接是经纬度外接矩形时,用 `glass_tiles_for_bbox()`;
+返回表(含 `h`/`v` 列)可以直接传给 `glass_fetch()`。
+
+## 日期区间 → 合成 DOY 文件夹
+
+归档按"合成起始日"的年积日(DOY)组织文件夹:
+
+```{r}
+glass_doys("LAI_MODIS_250M", from = "2018-08-01", to = "2018-08-31")
+```
+
+默认 `mode = "span"` 保留与日期区间**有交集**的所有合成;
+`mode = "start"` 只保留起始日落入区间内的合成——即旧脚本常用的语义。
+
+## 检索与下载文件
+
+`glass_list_files()` 读取单个合成文件夹的目录清单;
+`glass_fetch()` 按上一步的 DOY 表循环检索并下载(支持断点续传与校验):
+
+```{r eval=FALSE}
+files <- glass_fetch(
+  "LAI_MODIS_250M",
+  from = "2018-08-01", to = "2018-12-31",
+  roi = roi,
+  out_dir = "data/glass/lai"
+)
+# 先看清单不下载:dry_run = TRUE
+```
+
+下载引擎会与服务器比对文件大小,通过 HTTP `Range` 续传 `.part`
+半截文件,并把 `glass_manifest.csv` 台账写进 `out_dir`,
+中断后重跑会自动接着上次的进度。
+
+## 后处理
+
+`glass_process()` 是参数化后的完整流水线:清理 → 镶嵌 → 重投影 →
+掩膜 → 可选的时间维折叠:
+
+```{r eval=FALSE}
+mean_lai <- glass_process(
+  files,
+  roi = roi,
+  product = "LAI_MODIS_250M",
+  method = "cubic",
+  fun = "mean",
+  outfile = "glass_lai_mean.tif"
+)
+```
+
+波段清理规则来自登记表:原始填充值(如 255)按比例因子换算后置为
+`NA`,有效范围之外的值同样剔除。若输入是已读入的 `SpatRaster`,
+`glass_read()` 只应用显式传入的 `fill`/`valid_range` 参数。
+
+## 交互式下载界面
+
+```{r eval=FALSE}
+glass_app()
+```
+
+在地图上点击两次框出研究区矩形,选择已核验的产品变体与日期区间,
+预览清单后一键下载——底层复用的都是上述包函数。
+底图默认为无偏移的 Esri 影像;可选高德街道图层,注意其为 GCJ-02
+坐标(与 WGS84 存在约 500 米偏移)。

@@ -1,0 +1,110 @@
+# glass.sqdaitools
+
+**glass.sqdaitools** is a toolkit for the whole GLASS data lifecycle:
+query products from the [GLASS archive](https://glass.hku.hk/archive/),
+map your region of interest onto the `h<h>v<v>` sinusoidal tiling,
+expand a date range into composite DOY folders, batch-download with
+resume + size verification, and post-process granules with terra (fill
+values, scaling, reprojection, multi-tile mosaics, temporal composites).
+
+> **中文简介**:glass.sqdaitools 是 GLASS(Global Land Surface
+> Satellite)数据 全流程工具包:查询产品登记表、把研究区映射到正弦投影 h/v
+> 瓦片、日期区间转 合成 DOY
+> 文件夹、支持断点续传与大小校验的批量下载,以及基于 terra 的后处理
+> (填充值、比例因子、重投影、多瓦片镶嵌、时间合成)。中文快速上手:
+> [《快速上手(中文)》](https://giserdaishaoqing.github.io/glass.sqdaitools/articles/glass-quickstart-zh.html)。
+
+## Installation
+
+``` r
+# install.packages("devtools")
+devtools::install_github("GISerDaiShaoqing/glass.sqdaitools")
+```
+
+## Quick start
+
+``` r
+library(glass.sqdaitools)
+```
+
+### 1. Which tiles does my study area need?
+
+``` r
+tiles <- glass_tiles_for_bbox(120.8, 30.6, 122.2, 31.9)  # Greater Shanghai
+tiles
+```
+
+`h`/`v` are the sinusoidal tile indices used directly in GLASS file
+names (e.g. `h28v05`). For a polygon/multipolygon study area use
+`glass_tiles_for_sf(roi)`.
+
+### 2. What products and variants exist?
+
+``` r
+glass_registry("LAI", verified_only = TRUE)
+```
+
+The registry bundles the archive’s directory structure for 130+ variants
+(product × source × resolution); `LAI_MODIS_250M`, `NDVI_MODIS_250M`,
+`EVI_MODIS_250M`, `FVC_MODIS_500M` and `Ta_MODIS` are verified against
+real granules, including file-naming fragments and band metadata (fill
+value, scale factor, valid range) used in the post-processing step.
+
+### 3. Which composite folders cover my date range?
+
+``` r
+glass_doys("LAI_MODIS_250M", from = "2018-08-01", to = "2018-12-31")
+```
+
+`mode = "span"` keeps every composite overlapping the range (default);
+`mode = "start"` keeps only composites that start inside it — the
+semantics of the typical legacy scripting workflow.
+
+### 4. One-shot fetch (list + download)
+
+``` r
+files <- glass_fetch(
+  "LAI_MODIS_250M",
+  from = "2018-08-01", to = "2018-12-31",
+  tiles = "h28v05",
+  out_dir = "data/glass/lai"
+)
+```
+
+Downloads are retried, size-checked against the server, and can resume
+from a partial `.part`; a `glass_manifest.csv` ledger is written into
+`out_dir`. Set `dry_run = TRUE` to preview the manifest first.
+
+### 5. Post-process to your region
+
+``` r
+mean_lai <- glass_process(
+  files,
+  roi = roi_sf,        # your study area (sf); its CRS is the target CRS
+  product = "LAI_MODIS_250M",
+  fun = "mean",        # temporal mean over all composite layers
+  outfile = "glass_lai_mean.tif"
+)
+```
+
+[`glass_process()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_process.md)
+fills raw values (255 → `NA`, scaled correctly), groups granules by
+composite date, mosaics tiles per date, reprojects, crops/masks to
+`roi`, and can collapse layers with a function — the whole pipeline of a
+typical GLASS post-processing script, parameterised.
+
+### 6. Interactive download UI
+
+``` r
+glass_app()
+```
+
+Draw your ROI on a Leaflet map, pick a verified variant and dates,
+preview the manifest, then download in one click. Requires `shiny`,
+`leaflet` and `leafem`.
+
+## Acknowledgements
+
+Data are publicly hosted by the GLASS product team
+([glass.hku.hk](https://glass.hku.hk)). Please respect their citation
+policies; the package only reads public directory listings.
