@@ -1,7 +1,7 @@
 # Reproject, mask and composite GLASS rasters for a region
 
 Takes granule paths (or an already-read `SpatRaster` stack), applies
-[`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md)
+[`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md)
 cleanup, groups granules by composite date, merges tiles per date,
 reprojects the result to the CRS of `roi`, crops and masks, and
 optionally collapses layers with a function (e.g. a temporal mean). This
@@ -60,12 +60,12 @@ glass_process(
 - product:
 
   Registry variant key for
-  [`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md).
+  [`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md).
 
 - ...:
 
   Passed on to
-  [`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md).
+  [`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md).
 
 ## Value
 

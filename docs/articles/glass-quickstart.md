@@ -36,7 +36,7 @@ Variants with `verified = TRUE` were checked against real granules: file
 naming fragments (`code`, `version`, `layer`), year coverage, and band
 metadata (`fill_value`, `scale_factor`, `valid_min/valid_max`) all come
 from that check and are consumed by
-[`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md)/[`glass_process()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_process.md).
+[`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md)/[`glass_process()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_process.md).
 
 ## From region of interest to tiles
 
@@ -61,9 +61,9 @@ tiles[, c("h", "v", "lon_min", "lon_max", "lat_min", "lat_max", "valid")]
 ```
 
 For straight bounding boxes there is
-[`glass_tiles_for_bbox()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_tiles_for_bbox.md),
+[`glass_tiles_for_bbox()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_tiles_for_bbox.md),
 and passing the resulting table directly to
-[`glass_fetch()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_fetch.md)
+[`glass_fetch()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_fetch.md)
 is allowed (it understands data frames with `h`/`v` columns).
 
 ## Date range to composite folders
@@ -87,9 +87,9 @@ range; `mode = "start"` keeps only those starting inside it.
 
 ## Finding and downloading files
 
-[`glass_list_files()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_list_files.md)
+[`glass_list_files()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_list_files.md)
 reads one composite folder’s listing;
-[`glass_fetch()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_fetch.md)
+[`glass_fetch()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_fetch.md)
 loops it over the DOY table and downloads with resume/verification:
 
 ``` r
@@ -108,7 +108,7 @@ so an interrupted run continues where it stopped.
 
 ## Post-processing
 
-[`glass_process()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_process.md)
+[`glass_process()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_process.md)
 is the parameterised pipeline: cleanup, mosaic, reproject, mask,
 optional temporal collapse:
 
@@ -126,7 +126,7 @@ mean_lai <- glass_process(
 Band cleanup comes from the registry: the raw fill (e.g. 255) maps to
 `NA` after scaling, and the valid scaled range is excluded from
 analysis. For an already-read `SpatRaster`,
-[`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md)
+[`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md)
 with no `product` is a no-op except for explicit `fill`/`valid_range`
 arguments.
 

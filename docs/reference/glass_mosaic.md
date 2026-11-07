@@ -16,7 +16,7 @@ glass_mosaic(...)
 - ...:
 
   `SpatRaster` objects (each the result of
-  [`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md)).
+  [`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md)).
 
 ## Value
 

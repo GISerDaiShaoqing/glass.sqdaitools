@@ -13,7 +13,7 @@ step:
 
 When `product` names a registered variant, `fill`, `scale_factor` and
 `valid_range` default to the registry values
-([glass_products](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_products.md));
+([glass_products](https://gisersqdai.top/glass.sqdaitools/reference/glass_products.md));
 explicit arguments override the registry.
 
 ## Usage

@@ -4,7 +4,7 @@ Starts a local 'shiny' app with a 'leaflet' map: click twice on the map
 to frame your region of interest as a rectangle, pick a verified product
 variant and date range, preview the file manifest, then batch-download
 with
-[`glass_fetch()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_fetch.md)
+[`glass_fetch()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_fetch.md)
 in one click.
 
 ## Usage
@@ -28,7 +28,7 @@ Returns invisibly when the app stops.
 
 The app is thin: everything happens through the package functions, so
 the same workflow is available non-interactively via
-[`glass_fetch()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_fetch.md).
+[`glass_fetch()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_fetch.md).
 Requires 'shiny' and 'leaflet' (Suggested dependencies) to be installed.
 Base maps default to an unbiased Esri World Imagery layer; an Amap
 street layer is optional but uses GCJ-02 coordinates, so it is offset by

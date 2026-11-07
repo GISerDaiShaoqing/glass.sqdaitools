@@ -34,9 +34,9 @@ glass_registry(verified_only = TRUE)[, c("variant_id", "res", "cadence_days",
 `verified = TRUE` 的变体经过真实样例 granule 核验:文件命名片段
 (`code`、`version`、`layer`)、年份覆盖,以及波段元数据
 (`fill_value`、`scale_factor`、`valid_min/valid_max`)—— 后者会被
-[`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md)
+[`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md)
 /
-[`glass_process()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_process.md)
+[`glass_process()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_process.md)
 直接使用。
 
 按产品目录查看简表:
@@ -88,9 +88,9 @@ tiles[, c("h", "v", "lon_min", "lon_max", "lat_min", "lat_max", "valid")]
 ```
 
 给定的直接是经纬度外接矩形时,用
-[`glass_tiles_for_bbox()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_tiles_for_bbox.md);
+[`glass_tiles_for_bbox()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_tiles_for_bbox.md);
 返回表(含 `h`/`v` 列)可以直接传给
-[`glass_fetch()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_fetch.md)。
+[`glass_fetch()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_fetch.md)。
 
 ## 日期区间 → 合成 DOY 文件夹
 
@@ -113,9 +113,9 @@ glass_doys("LAI_MODIS_250M", from = "2018-08-01", to = "2018-08-31")
 
 ## 检索与下载文件
 
-[`glass_list_files()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_list_files.md)
+[`glass_list_files()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_list_files.md)
 读取单个合成文件夹的目录清单;
-[`glass_fetch()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_fetch.md)
+[`glass_fetch()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_fetch.md)
 按上一步的 DOY 表循环检索并下载(支持断点续传与校验):
 
 ``` r
@@ -134,7 +134,7 @@ files <- glass_fetch(
 
 ## 后处理
 
-[`glass_process()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_process.md)
+[`glass_process()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_process.md)
 是参数化后的完整流水线:清理 → 镶嵌 → 重投影 → 掩膜 → 可选的时间维折叠:
 
 ``` r
@@ -150,7 +150,7 @@ mean_lai <- glass_process(
 
 波段清理规则来自登记表:原始填充值(如 255)按比例因子换算后置为
 `NA`,有效范围之外的值同样剔除。若输入是已读入的 `SpatRaster`,
-[`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md)
+[`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md)
 只应用显式传入的 `fill`/`valid_range` 参数。
 
 ## 交互式下载界面

@@ -1,8 +1,15 @@
-url: https://giserdaishaoqing.github.io/glass.sqdaitools/
+url: https://gisersqdai.top/glass.sqdaitools/
 
 template:
   bootstrap: 5
   lang: en
+  opengraph:
+    image:
+      src: man/figures/social-preview.png
+      alt: "glass.sqdaitools — an R toolkit for the GLASS data lifecycle: registry, tiled retrieval, resumable download and post-processing"
+    twitter:
+      creator: "@DaiShaoqing"
+      card: summary_large_image
 
 logo:
   src: man/figures/logo.png

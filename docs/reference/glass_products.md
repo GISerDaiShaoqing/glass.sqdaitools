@@ -5,7 +5,7 @@ one row per archive variant (product x source x resolution). It stores
 the archive URL layout, the observed year coverage, and—for the variants
 whose sample files have been checked—file-name fragments and band
 scaling metadata used by
-[`glass_read()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_read.md).
+[`glass_read()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_read.md).
 
 ## Usage
 

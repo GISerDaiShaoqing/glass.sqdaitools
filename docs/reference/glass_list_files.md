@@ -37,7 +37,7 @@ glass_list_files(
 
   Optional tile selector: a character vector like `c("h28v05")` or a
   data frame with `h`/`v` columns (e.g. the output of
-  [`glass_tiles_for_bbox()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_tiles_for_bbox.md)).
+  [`glass_tiles_for_bbox()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_tiles_for_bbox.md)).
 
 - ext:
 

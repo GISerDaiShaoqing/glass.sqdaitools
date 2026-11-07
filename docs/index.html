@@ -18,7 +18,11 @@
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Tools for Downloading and Processing GLASS Land Surface Products">
 <meta name="description" content="Queries, downloads and post-processes products from the GLASS (Global Land Surface Satellite) data archive at glass.hku.hk. Provides a product registry with archive path templates and band metadata, mapping of regions of interest onto the MODIS sinusoidal (h/v) tile grid of the archive, composite DOY lookup for date ranges, a batch download engine (built on httr2, with size verification, resume and retry), and terra-based post-processing including fill values, reprojection, multi-tile mosaics and temporal composites. Also ships an optional interactive shiny/leaflet download interface.">
 <meta property="og:description" content="Queries, downloads and post-processes products from the GLASS (Global Land Surface Satellite) data archive at glass.hku.hk. Provides a product registry with archive path templates and band metadata, mapping of regions of interest onto the MODIS sinusoidal (h/v) tile grid of the archive, composite DOY lookup for date ranges, a batch download engine (built on httr2, with size verification, resume and retry), and terra-based post-processing including fill values, reprojection, multi-tile mosaics and temporal composites. Also ships an optional interactive shiny/leaflet download interface.">
-<meta property="og:image" content="https://giserdaishaoqing.github.io/glass.sqdaitools/logo.png">
+<meta property="og:image" content="https://gisersqdai.top/glass.sqdaitools/reference/figures/social-preview.png">
+<meta property="og:image:alt" content="glass.sqdaitools — an R toolkit for the GLASS data lifecycle: registry, tiled retrieval, resumable download and post-processing">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:creator" content="@DaiShaoqing">
+<meta name="twitter:site" content="@DaiShaoqing">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -66,7 +70,7 @@
 
 <p><strong>glass.sqdaitools</strong> is a toolkit for the whole GLASS data lifecycle: query products from the <a href="https://glass.hku.hk/archive/" class="external-link">GLASS archive</a>, map your region of interest onto the <code>h&lt;h&gt;v&lt;v&gt;</code> sinusoidal tiling, expand a date range into composite DOY folders, batch-download with resume + size verification, and post-process granules with terra (fill values, scaling, reprojection, multi-tile mosaics, temporal composites).</p>
 <blockquote>
-<p><strong>中文简介</strong>:glass.sqdaitools 是 GLASS(Global Land Surface Satellite)数据 全流程工具包:查询产品登记表、把研究区映射到正弦投影 h/v 瓦片、日期区间转 合成 DOY 文件夹、支持断点续传与大小校验的批量下载,以及基于 terra 的后处理 (填充值、比例因子、重投影、多瓦片镶嵌、时间合成)。中文快速上手: <a href="https://giserdaishaoqing.github.io/glass.sqdaitools/articles/glass-quickstart-zh.html">《快速上手(中文)》</a>。</p>
+<p><strong>中文简介</strong>:glass.sqdaitools 是 GLASS(Global Land Surface Satellite)数据 全流程工具包:查询产品登记表、把研究区映射到正弦投影 h/v 瓦片、日期区间转 合成 DOY 文件夹、支持断点续传与大小校验的批量下载,以及基于 terra 的后处理 (填充值、比例因子、重投影、多瓦片镶嵌、时间合成)。中文快速上手: <a href="https://gisersqdai.top/glass.sqdaitools/articles/glass-quickstart-zh.html">《快速上手(中文)》</a>。</p>
 </blockquote>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -79,7 +83,7 @@
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/GISerDaiShaoqing/glass.sqdaitools" class="external-link">glass.sqdaitools</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://gisersqdai.top/glass.sqdaitools/">glass.sqdaitools</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="id_1-which-tiles-does-my-study-area-need">1. Which tiles does my study area need?<a class="anchor" aria-label="anchor" href="#id_1-which-tiles-does-my-study-area-need"></a>
 </h3>

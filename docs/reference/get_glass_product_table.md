@@ -3,7 +3,7 @@
 Scrapes the product overview table from glass.hku.hk with 'httr2'. On
 failure the bundled 25-product fallback table is used. In new code
 prefer
-[`glass_registry()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_registry.md)/[`glass_product_info()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_registry.md),
+[`glass_registry()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_registry.md)/[`glass_product_info()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_registry.md),
 which also carry archive paths and band metadata.
 
 ## Usage

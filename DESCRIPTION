@@ -15,8 +15,8 @@ Description: Queries, downloads and post-processes products from the GLASS
     multi-tile mosaics and temporal composites. Also ships an optional
     interactive 'shiny'/'leaflet' download interface.
 License: MIT + file LICENSE
-URL: https://github.com/GISerDaiShaoqing/glass.sqdaitools,
-    https://giserdaishaoqing.github.io/glass.sqdaitools/
+URL: https://gisersqdai.top/glass.sqdaitools/,
+    https://github.com/GISerDaiShaoqing/glass.sqdaitools
 BugReports: https://github.com/GISerDaiShaoqing/glass.sqdaitools/issues
 Encoding: UTF-8
 LazyData: true

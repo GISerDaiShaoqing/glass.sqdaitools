@@ -20,7 +20,7 @@ values, scaling, reprojection, multi-tile mosaics, temporal composites).
 > 瓦片、日期区间转 合成 DOY
 > 文件夹、支持断点续传与大小校验的批量下载,以及基于 terra 的后处理
 > (填充值、比例因子、重投影、多瓦片镶嵌、时间合成)。中文快速上手:
-> [《快速上手(中文)》](https://giserdaishaoqing.github.io/glass.sqdaitools/articles/glass-quickstart-zh.html)。
+> [《快速上手(中文)》](https://gisersqdai.top/glass.sqdaitools/articles/glass-quickstart-zh.html)。
 
 ## Installation
 

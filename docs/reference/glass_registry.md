@@ -1,7 +1,7 @@
 # Query the GLASS product registry
 
 `glass_registry()` returns the bundled
-[glass_products](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_products.md)
+[glass_products](https://gisersqdai.top/glass.sqdaitools/reference/glass_products.md)
 registry, optionally filtered. `glass_product_info()` returns one or a
 few rows and errors loudly when the lookup is ambiguous, so it is handy
 for interactive use.
@@ -33,7 +33,7 @@ glass_product_info(variant_id = NULL, product = NULL)
 ## Value
 
 A tibble of registry rows (see
-[glass_products](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_products.md)
+[glass_products](https://gisersqdai.top/glass.sqdaitools/reference/glass_products.md)
 for columns).
 
 ## Examples

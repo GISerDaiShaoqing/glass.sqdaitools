@@ -2,13 +2,13 @@
 
 `glass_fetch()` orchestrates the full pipeline of the legacy scripts:
 registry variant -\>
-[`glass_tiles_for_sf()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_tiles_for_bbox.md)
+[`glass_tiles_for_sf()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_tiles_for_bbox.md)
 (or explicit `tiles`) -\>
-[`glass_doys()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_doys.md)
+[`glass_doys()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_doys.md)
 -\>
-[`glass_list_files()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_list_files.md)
+[`glass_list_files()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_list_files.md)
 per composite folder -\>
-[`glass_download()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_download.md).
+[`glass_download()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_download.md).
 
 ## Usage
 
@@ -51,7 +51,7 @@ glass_fetch(
 - doys_mode:
 
   DOY selection mode passed to
-  [`glass_doys()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_doys.md)
+  [`glass_doys()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_doys.md)
   (`"span"` keeps every composite overlapping the range; `"start"` keeps
   only those starting inside it).
 
@@ -66,7 +66,7 @@ glass_fetch(
 - delay, overwrite, quiet:
 
   Passed to
-  [`glass_download()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_download.md).
+  [`glass_download()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_download.md).
 
 ## Value
 

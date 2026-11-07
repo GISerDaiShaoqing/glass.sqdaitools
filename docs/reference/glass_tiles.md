@@ -15,9 +15,9 @@ width and height 1111950.51966667 m) to WGS84; see the original
 `glass_tiles.tsv` in `data-raw/`. Bounds are those of the curved tile
 polygons, so a strict bounding-box intersection test may slightly
 over-select corner tiles. Use
-[`glass_tiles_for_bbox()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_tiles_for_bbox.md)
+[`glass_tiles_for_bbox()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_tiles_for_bbox.md)
 or
-[`glass_tiles_for_sf()`](https://giserdaishaoqing.github.io/glass.sqdaitools/reference/glass_tiles_for_bbox.md)
+[`glass_tiles_for_sf()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_tiles_for_bbox.md)
 for exact selection.
 
 ## Usage
