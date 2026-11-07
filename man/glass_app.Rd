@@ -13,15 +13,18 @@ glass_app(port = getOption("shiny.port"))
 Returns invisibly when the app stops.
 }
 \description{
-Starts a local 'shiny' app with a 'leaflet' map: draw a region of
-interest, pick a verified product variant and date range, preview the
-file manifest, then batch-download with \code{\link[=glass_fetch]{glass_fetch()}} in one click.
+Starts a local 'shiny' app with a 'leaflet' map: click twice on the map to
+frame your region of interest as a rectangle, pick a verified product
+variant and date range, preview the file manifest, then batch-download
+with \code{\link[=glass_fetch]{glass_fetch()}} in one click.
 }
 \details{
 The app is thin: everything happens through the package functions, so the
 same workflow is available non-interactively via \code{\link[=glass_fetch]{glass_fetch()}}.
-Requires 'shiny', 'leaflet' and 'leafem' (Suggested dependencies) to be
-installed.
+Requires 'shiny' and 'leaflet' (Suggested dependencies) to be installed.
+Base maps default to an unbiased Esri World Imagery layer; an Amap street
+layer is optional but uses GCJ-02 coordinates, so it is offset by roughly
+500 meters from WGS84.
 }
 \examples{
 \dontrun{

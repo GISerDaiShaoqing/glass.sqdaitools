@@ -24,6 +24,9 @@ navbar:
   - text: Reference
     href: reference/index.html
   right:
+  - text: "D3L Tool"
+    href: https://gisersqdai.top/D3LTool/
+    aria-label: D3L Tool GUI
   - icon: fa-github fa-lg
     href: https://github.com/GISerDaiShaoqing/glass.sqdaitools
     aria-label: GitHub

@@ -106,12 +106,31 @@ whole pipeline of a typical GLASS post-processing script, parameterised.
 glass_app()
 ```
 
-Draw your ROI on a Leaflet map, pick a verified variant and dates,
-preview the manifest, then download in one click. Requires `shiny`,
-`leaflet` and `leafem`.
+Draw your ROI on a Leaflet map (click twice to frame a rectangle), pick
+a verified variant and dates, preview the manifest, then download in one
+click. Requires `shiny` and `leaflet`.
+
+## GUI front end: D3L Tool
+
+Prefer a desktop application? [D3L
+Tool](https://github.com/GISerDaiShaoqing/D3LTool) ([online
+docs](https://gisersqdai.top/D3LTool/)) is a NASA satellite download
+manager. Its **v2.5.0** release integrates GLASS batch downloading built
+on the skeleton of this package, while granule post-processing (fill
+values, mosaics, reprojection, temporal composites) keeps running on
+`glass.sqdaitools`. The two projects are designed as a matched pair:
+**D3L Tool** for interactive search & download, **glass.sqdaitools** for
+reproducible, scriptable processing.
 
 ## Acknowledgements
 
 Data are publicly hosted by the GLASS product team
 ([glass.hku.hk](https://glass.hku.hk)). Please respect their citation
 policies; the package only reads public directory listings.
+
+## Author
+
+Shaoqing Dai · [ORCID
+0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728) ·
+[Homepage](https://gisersqdai.top/mycv/) ·
+[GitHub](https://github.com/GISerDaiShaoqing)

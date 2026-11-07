@@ -11,3 +11,4 @@ zcode/
 .zcode/
 glass_download_vi.R
 glass_process.R
+output/
