@@ -26,12 +26,15 @@ glass_list_files(
 - year:
 
   Calendar year of the composite (folder level). May be `NULL` for
-  "flat" layout variants (e.g. AGB).
+  "flat" layout variants (e.g. KGClim, AGB). Required for the other
+  layouts.
 
 - doy:
 
   Day of year of the composite, integer or `"217"`; `NULL` only allowed
-  for "flat" variants.
+  for "flat" variants (whole collection) and "year_files" variants (all
+  composites of the year; otherwise files are filtered by the
+  `A{year}{doy}` fragment in their names).
 
 - tiles:
 

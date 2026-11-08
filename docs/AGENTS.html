@@ -58,9 +58,9 @@
 </tr></thead><tbody><tr><td><code>R/</code></td>
 <td>11 source files, 13 exported functions (registry / tiles / DOY / list / download / process / shiny)</td>
 </tr><tr><td><code>data-raw/</code></td>
-<td>One-shot build scripts: <code>crawl_archive.R</code> → <code>probe_samples.R</code> → <code>verify_bands.R</code> → <code>build_tiles.R</code> → <code>build_registry.R</code> (network needed)</td>
+<td>One-shot build scripts: <code>crawl_archive.R</code> → <code>probe_samples.R</code> → <code>verify_bands.R</code> → <code>verify_batch.R</code> (batch variant verification) → <code>build_tiles.R</code> → <code>build_registry.R</code> (network needed)</td>
 </tr><tr><td><code>data/</code></td>
-<td>Bundled datasets <code>glass_products</code> (133 variants, 5 verified) and <code>glass_tiles</code> (648 tiles)</td>
+<td>Bundled datasets <code>glass_products</code> (133 variants, 131 verified across 4 layouts) and <code>glass_tiles</code> (648 tiles)</td>
 </tr><tr><td><code>inst/shinyapp/app.R</code></td>
 <td>Two-click ROI download UI, launched by <code><a href="reference/glass_app.html">glass_app()</a></code>; thin shell over package functions</td>
 </tr><tr><td><code>tests/testthat/</code></td>
@@ -96,7 +96,7 @@
 <ul><li>Variants are identified by <code>variant_id</code> (e.g. <code>LAI_MODIS_250M</code>).</li>
 <li>
 <code>verified = TRUE</code> rows carry file-naming fragments (<code>code</code>, <code>version</code>, <code>layer</code>) and band metadata (<code>fill_value</code>, <code>scale_factor</code>, <code>valid_min/max</code>) measured from a real granule; only these feed <code><a href="reference/glass_read.html">glass_read()</a></code> automatically.</li>
-<li>Extending the registry = extend <code>data-raw/build_registry.R</code> + rerun the build chain, never edit the <code>.rda</code> by hand.</li>
+<li>Extending the registry = add the variant to <code>data-raw/verify_batch.R</code> (<code>FAMILIES</code>/<code>TARGET_IDS</code>) and rerun it, then <code>build_registry.R</code>; the batch writes <code>data-raw/verified_overlay.csv</code> which build_registry merges (CSV rows take precedence). Never edit the <code>.rda</code> by hand.</li>
 <li>
 <code>terra</code>/GDAL already apply HDF SDS scale/offset on read; <code><a href="reference/glass_read.html">glass_read()</a></code> converts the raw fill value to post-scale units before NA-ing it (see <code>dev/README.md</code> band-metadata notes).</li>
 </ul></div>

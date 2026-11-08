@@ -97,7 +97,7 @@
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/glass_registry.html">glass_registry</a></span><span class="op">(</span><span class="st">"LAI"</span>, verified_only <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>The registry bundles the archive’s directory structure for 130+ variants (product × source × resolution); <code>LAI_MODIS_250M</code>, <code>NDVI_MODIS_250M</code>, <code>EVI_MODIS_250M</code>, <code>FVC_MODIS_500M</code> and <code>Ta_MODIS</code> are verified against real granules, including file-naming fragments and band metadata (fill value, scale factor, valid range) used in the post-processing step.</p>
+<p>The registry bundles the archive’s directory structure for 133 variants (product × source × resolution), covering four archive layouts (year/DOY folders, year-level files, daily YYYYDDD folders and static file collections). 131 of them are verified against real granules — including file-naming fragments, composite cadence and band metadata (fill value, scale factor, valid range) used in the post-processing step.</p>
 </div>
 <div class="section level3">
 <h3 id="id_3-which-composite-folders-cover-my-date-range">3. Which composite folders cover my date range?<a class="anchor" aria-label="anchor" href="#id_3-which-composite-folders-cover-my-date-range"></a>
@@ -136,7 +136,7 @@
 </h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/glass_app.html">glass_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Draw your ROI on a Leaflet map (click twice to frame a rectangle), pick a verified variant and dates, preview the manifest, then download in one click. Requires <code>shiny</code> and <code>leaflet</code>.</p>
+<p>Draw your ROI on a Leaflet map (click twice to frame a rectangle), pick a verified variant and dates, preview the manifest, then download in one click — with a native folder-picker dialog for the output directory and a per-file progress bar. Requires <code>shiny</code> and <code>leaflet</code>.</p>
 </div>
 </div>
 <div class="section level2">

@@ -62,10 +62,11 @@ tiles
 glass_registry("LAI", verified_only = TRUE)
 ```
 
-The registry bundles the archive's directory structure for 130+ variants
-(product × source × resolution); `LAI_MODIS_250M`, `NDVI_MODIS_250M`,
-`EVI_MODIS_250M`, `FVC_MODIS_500M` and `Ta_MODIS` are verified against real
-granules, including file-naming fragments and band metadata (fill value,
+The registry bundles the archive's directory structure for 133 variants
+(product × source × resolution), covering four archive layouts (year/DOY
+folders, year-level files, daily YYYYDDD folders and static file
+collections). 131 of them are verified against real granules — including
+file-naming fragments, composite cadence and band metadata (fill value,
 scale factor, valid range) used in the post-processing step.
 
 ### 3. Which composite folders cover my date range?
@@ -117,8 +118,9 @@ glass_app()
 ```
 
 Draw your ROI on a Leaflet map (click twice to frame a rectangle), pick a
-verified variant and dates, preview the manifest, then download in one click.
-Requires `shiny` and `leaflet`.
+verified variant and dates, preview the manifest, then download in one click —
+with a native folder-picker dialog for the output directory and a per-file
+progress bar. Requires `shiny` and `leaflet`.
 
 ## GUI front end: D3L Tool
 

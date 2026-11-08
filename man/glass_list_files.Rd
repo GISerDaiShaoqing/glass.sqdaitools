@@ -16,10 +16,13 @@ glass_list_files(
 \item{variant_id}{Registry variant key, e.g. \code{"LAI_MODIS_250M"}.}
 
 \item{year}{Calendar year of the composite (folder level). May be \code{NULL}
-for "flat" layout variants (e.g. AGB).}
+for "flat" layout variants (e.g. KGClim, AGB). Required for the other
+layouts.}
 
 \item{doy}{Day of year of the composite, integer or \code{"217"}; \code{NULL} only
-allowed for "flat" variants.}
+allowed for "flat" variants (whole collection) and "year_files" variants
+(all composites of the year; otherwise files are filtered by the
+\verb{A\{year\}\{doy\}} fragment in their names).}
 
 \item{tiles}{Optional tile selector: a character vector like
 \code{c("h28v05")} or a data frame with \code{h}/\code{v} columns (e.g. the output of

@@ -4,7 +4,14 @@
 \alias{glass_download}
 \title{Batch download a GLASS file manifest}
 \usage{
-glass_download(manifest, out_dir, delay = 1, overwrite = FALSE, quiet = FALSE)
+glass_download(
+  manifest,
+  out_dir,
+  delay = 1,
+  overwrite = FALSE,
+  quiet = FALSE,
+  progress = NULL
+)
 }
 \arguments{
 \item{manifest}{Data frame with at least \code{filename} and \code{url} columns, as
@@ -17,6 +24,11 @@ returned by \code{\link[=glass_list_files]{glass_list_files()}}.}
 \item{overwrite}{Re-download existing valid files.}
 
 \item{quiet}{Suppress per-file console messages.}
+
+\item{progress}{Optional callback invoked after each file as
+\code{progress(i, n, filename, status)} (1-based index, total count, file
+name, download status); use it to drive GUI progress bars. Errors
+raised inside the callback are ignored.}
 }
 \value{
 The manifest augmented with \code{destfile}, \code{status} and \code{size_bytes}

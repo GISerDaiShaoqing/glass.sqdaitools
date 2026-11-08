@@ -44,13 +44,13 @@ glass_registry("LAI")
 #>   product long_name     variant_id source res   layout observed_years start_year
 #>   <chr>   <chr>         <chr>      <chr>  <chr> <chr>  <chr>               <dbl>
 #> 1 LAI     Leaf Area In… LAI_AVHRR  AVHRR  NA    year_… 1981-2018            1981
-#> 2 LAI     Leaf Area In… LAI_HR_LA… HR_LAI V01   year_… NA                     NA
-#> 3 LAI     Leaf Area In… LAI_MODIS… MODIS  0.05D year_… NA                     NA
-#> 4 LAI     Leaf Area In… LAI_MODIS… MODIS  0.1D  year_… NA                     NA
-#> 5 LAI     Leaf Area In… LAI_MODIS… MODIS  0.25D year_… NA                     NA
-#> 6 LAI     Leaf Area In… LAI_MODIS… MODIS  0.5D  year_… NA                     NA
+#> 2 LAI     Leaf Area In… LAI_HR_LA… HR_LAI V01   flat   NA                     NA
+#> 3 LAI     Leaf Area In… LAI_MODIS… MODIS  0.05D year_… 2000-2025            2000
+#> 4 LAI     Leaf Area In… LAI_MODIS… MODIS  0.1D  year_… 2000-2025            2000
+#> 5 LAI     Leaf Area In… LAI_MODIS… MODIS  0.25D year_… 2000-2025            2000
+#> 6 LAI     Leaf Area In… LAI_MODIS… MODIS  0.5D  year_… 2000-2025            2000
 #> 7 LAI     Leaf Area In… LAI_MODIS… MODIS  250M  year_… 2000-2025            2000
-#> 8 LAI     Leaf Area In… LAI_MODIS… MODIS  500M  year_… NA                     NA
+#> 8 LAI     Leaf Area In… LAI_MODIS… MODIS  500M  year_… 2000-2025            2000
 #> # ℹ 13 more variables: end_year <dbl>, cadence_days <int>, temporal_res <chr>,
 #> #   version <chr>, code <chr>, layer <chr>, fill_value <dbl>,
 #> #   scale_factor <dbl>, valid_min <dbl>, valid_max <dbl>, verified <lgl>,

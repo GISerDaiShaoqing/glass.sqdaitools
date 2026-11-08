@@ -70,12 +70,15 @@ keys are needed.</p>
 
 <dt id="arg-year">year<a class="anchor" aria-label="anchor" href="#arg-year"></a></dt>
 <dd><p>Calendar year of the composite (folder level). May be <code>NULL</code>
-for "flat" layout variants (e.g. AGB).</p></dd>
+for "flat" layout variants (e.g. KGClim, AGB). Required for the other
+layouts.</p></dd>
 
 
 <dt id="arg-doy">doy<a class="anchor" aria-label="anchor" href="#arg-doy"></a></dt>
 <dd><p>Day of year of the composite, integer or <code>"217"</code>; <code>NULL</code> only
-allowed for "flat" variants.</p></dd>
+allowed for "flat" variants (whole collection) and "year_files" variants
+(all composites of the year; otherwise files are filtered by the
+<code>A{year}{doy}</code> fragment in their names).</p></dd>
 
 
 <dt id="arg-tiles">tiles<a class="anchor" aria-label="anchor" href="#arg-tiles"></a></dt>

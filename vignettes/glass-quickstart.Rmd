@@ -115,4 +115,6 @@ glass_app()
 ```
 
 Draw the ROI on a map, pick a verified variant, preview the manifest and
-download — the same package functions underneath.
+download — the same package functions underneath. Locally, the output folder
+can be chosen through a native directory dialog and a progress bar follows
+each file during the batch download.

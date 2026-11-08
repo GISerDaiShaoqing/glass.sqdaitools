@@ -23,11 +23,16 @@ ui <- fluidPage(
                    inline = TRUE),
       textInput("out_dir", "下载目录",
                 value = file.path(tempdir(), "glass_download")),
+      actionButton("btn_browse", "浏览文件夹…",
+                   class = "btn btn-outline-secondary btn-sm"),
+      helpText("点“浏览文件夹…”弹出系统目录选择对话框(本机运行时可用);",
+               "也可直接在上方文本框输入路径。"),
       h4("3. 检索 / 下载"),
       actionButton("btn_list", "刷新文件清单", class = "btn btn-primary"),
       hr(),
       actionButton("btn_dl", "开始下载", class = "btn btn-success"),
-      helpText("下载以同步方式执行;完成状态计入下方表格(含 glass_manifest.csv)。")
+      helpText("下载时上方显示进度条,逐文件更新(含当前文件名与状态);",
+               "完成状态计入下方表格(含 glass_manifest.csv)。")
     ),
     mainPanel(
       width = 8,
@@ -128,25 +133,54 @@ server <- function(input, output, session) {
     }
   })
 
+  # 系统目录选择对话框(本机 R 会话带 tcltk 时可用;否则提示手动输入)
+  observeEvent(input$btn_browse, {
+    if (!requireNamespace("tcltk", quietly = TRUE) ||
+        !isTRUE(capabilities("tcltk"))) {
+      showNotification("当前 R 不支持 tcltk 目录对话框,请直接输入下载目录。",
+                       type = "warning")
+      return(invisible())
+    }
+    chosen <- tryCatch(
+      as.character(tcltk::tkchooseDirectory(
+        title = "选择 GLASS 下载目录", mustexist = TRUE)),
+      error = function(e) {
+        showNotification(paste0("打开目录对话框失败: ", conditionMessage(e),
+                                " — 请手动输入路径。"), type = "warning")
+        character(0)
+      })
+    if (length(chosen) == 1L && nzchar(chosen)) {
+      updateTextInput(session, "out_dir", value = chosen)
+    }
+  })
+
   run_fetch <- function(dry_run) {
     if (is.null(rv$roi)) {
       showNotification("请先在地图上点两次画出研究区矩形", type = "error")
       return(NULL)
     }
-    withProgress(message = if (dry_run) "检索文件清单..." else "下载中...", value = 0.2, {
-      out <- tryCatch(
-        glass.sqdaitools::glass_fetch(
-          input$variant,
-          from = input$daterange[1], to = input$daterange[2],
-          roi = rv$roi, doys_mode = input$doys_mode,
-          out_dir = input$out_dir,
-          dry_run = dry_run, quiet = TRUE
-        ),
-        error = function(e) {
-          showNotification(paste0("失败: ", conditionMessage(e)), type = "error")
-          NULL
-        })
-    })
+    p <- shiny::Progress$new(session, min = 0, max = 1)
+    on.exit(p$close(), add = TRUE)
+    # 检索清单阶段文件数未知:脉冲式;下载阶段由逐文件回调切换为真实进度
+    p$set(message = if (dry_run) "检索文件清单..." else "检索清单,随后开始下载...",
+          value = NULL)
+    prog_cb <- if (dry_run) NULL else function(i, n, fname, st) {
+      p$set(message = "正在下载", value = i / n,
+            detail = sprintf("%d/%d  %s  [%s]", i, n, fname, st))
+    }
+    out <- tryCatch(
+      glass.sqdaitools::glass_fetch(
+        input$variant,
+        from = input$daterange[1], to = input$daterange[2],
+        roi = rv$roi, doys_mode = input$doys_mode,
+        out_dir = input$out_dir,
+        dry_run = dry_run, quiet = TRUE, progress = prog_cb
+      ),
+      error = function(e) {
+        showNotification(paste0("失败: ", conditionMessage(e)), type = "error")
+        NULL
+      })
+    p$close()
     out
   }
 

@@ -12,7 +12,7 @@ A tibble with one row per archive variant:
 \item{variant_id}{Unique key, e.g. "LAI_MODIS_250M"}
 \item{source}{Source/series sub-directory, e.g. "MODIS", "AVHRR"}
 \item{res}{Resolution sub-directory, e.g. "250M"; \code{NA} if absent}
-\item{layout}{Archive layout: "year_doy" (year/composite folders) or "flat" (files directly)}
+\item{layout}{Archive layout: "year_doy" (year/composite folders), "flat" (static file collection), "year_files" (granules directly under year folders, e.g. AVHRR CMG) or "year_yyyddd" (daily YYYYDDD folders, e.g. AWGF LST)}
 \item{observed_years}{Year coverage observed in the directory tree, e.g. "2000-2025"}
 \item{start_year, end_year}{First/last observed year, \code{NA} if unobserved}
 \item{cadence_days}{Days per synthesis cycle, e.g. 8 for the 8-day products}

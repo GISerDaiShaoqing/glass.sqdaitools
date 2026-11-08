@@ -39,8 +39,10 @@ A tibble with one row per archive variant:
 
 - layout:
 
-  Archive layout: "year_doy" (year/composite folders) or "flat" (files
-  directly)
+  Archive layout: "year_doy" (year/composite folders), "flat" (static
+  file collection), "year_files" (granules directly under year folders,
+  e.g. AVHRR CMG) or "year_yyyddd" (daily YYYYDDD folders, e.g. AWGF
+  LST)
 
 - observed_years:
 

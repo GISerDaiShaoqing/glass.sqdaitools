@@ -31,8 +31,8 @@ R package. Follow these rules without exception.
 | Path | Role |
 |---|---|
 | `R/` | 11 source files, 13 exported functions (registry / tiles / DOY / list / download / process / shiny) |
-| `data-raw/` | One-shot build scripts: `crawl_archive.R` → `probe_samples.R` → `verify_bands.R` → `build_tiles.R` → `build_registry.R` (network needed) |
-| `data/` | Bundled datasets `glass_products` (133 variants, 5 verified) and `glass_tiles` (648 tiles) |
+| `data-raw/` | One-shot build scripts: `crawl_archive.R` → `probe_samples.R` → `verify_bands.R` → `verify_batch.R` (batch variant verification) → `build_tiles.R` → `build_registry.R` (network needed) |
+| `data/` | Bundled datasets `glass_products` (133 variants, 131 verified across 4 layouts) and `glass_tiles` (648 tiles) |
 | `inst/shinyapp/app.R` | Two-click ROI download UI, launched by `glass_app()`; thin shell over package functions |
 | `tests/testthat/` | Offline unit tests (93 passing); network tests gated behind `GLASS_SMOKE=1` |
 | `vignettes/` | `glass-quickstart.Rmd` (EN) and `glass-quickstart-zh.Rmd` (中文), network chunks `eval=FALSE` |
@@ -63,8 +63,10 @@ locale leak that breaks child R processes.
 - `verified = TRUE` rows carry file-naming fragments (`code`, `version`,
   `layer`) and band metadata (`fill_value`, `scale_factor`, `valid_min/max`)
   measured from a real granule; only these feed `glass_read()` automatically.
-- Extending the registry = extend `data-raw/build_registry.R` + rerun the
-  build chain, never edit the `.rda` by hand.
+- Extending the registry = add the variant to `data-raw/verify_batch.R`
+  (`FAMILIES`/`TARGET_IDS`) and rerun it, then `build_registry.R`; the batch
+  writes `data-raw/verified_overlay.csv` which build_registry merges (CSV rows
+  take precedence). Never edit the `.rda` by hand.
 - `terra`/GDAL already apply HDF SDS scale/offset on read; `glass_read()`
   converts the raw fill value to post-scale units before NA-ing it (see
   `dev/README.md` band-metadata notes).

@@ -8,9 +8,12 @@
 #'
 #' @param variant_id Registry variant key, e.g. `"LAI_MODIS_250M"`.
 #' @param year Calendar year of the composite (folder level). May be `NULL`
-#'   for "flat" layout variants (e.g. AGB).
+#'   for "flat" layout variants (e.g. KGClim, AGB). Required for the other
+#'   layouts.
 #' @param doy Day of year of the composite, integer or `"217"`; `NULL` only
-#'   allowed for "flat" variants.
+#'   allowed for "flat" variants (whole collection) and "year_files" variants
+#'   (all composites of the year; otherwise files are filtered by the
+#'   `A{year}{doy}` fragment in their names).
 #' @param tiles Optional tile selector: a character vector like
 #'   `c("h28v05")` or a data frame with `h`/`v` columns (e.g. the output of
 #'   [glass_tiles_for_bbox()]).
@@ -34,6 +37,16 @@ glass_list_files <- function(variant_id, year = NULL, doy = NULL,
     if (is.null(year)) glass_abort("This variant requires `year`")
     if (is.null(doy)) glass_abort("This variant requires `doy` (a composite day of year)")
     url_folder <- paste0(info$url_root[[1]], year, "/", sprintf("%03d", as.integer(doy)), "/")
+  } else if (layout == "year_files") {
+    # 年文件夹下直接放 granule:按文件名中的 A{year}{doy} 片段检索
+    if (is.null(year)) glass_abort("This variant requires `year`")
+    url_folder <- paste0(info$url_root[[1]], year, "/")
+  } else if (layout == "year_yyyddd") {
+    # 日目录以 YYYYDDD 命名(如 AWGF_LST)
+    if (is.null(year)) glass_abort("This variant requires `year`")
+    if (is.null(doy)) glass_abort("This variant requires `doy` (a composite day of year)")
+    url_folder <- paste0(info$url_root[[1]], year, "/",
+                         sprintf("%d%03d", as.integer(year), as.integer(doy)), "/")
   } else if (layout == "flat") {
     url_folder <- info$url_root[[1]]
   } else {
@@ -53,6 +66,9 @@ glass_list_files <- function(variant_id, year = NULL, doy = NULL,
   if (!is.null(tile_ids)) {
     sel <- sel & grepl(paste0("(", paste(tile_ids, collapse = "|"), ")"), files)
   }
+  if (layout == "year_files" && !is.null(doy)) {
+    sel <- sel & grepl(sprintf("A%d%03d", as.integer(year), as.integer(doy)), files)
+  }
   # 已核验的产品要求文件名含 GLASS 代码,排除误置文件
   if (isTRUE(info$verified[[1]]) && !is.na(info$code[[1]])) {
     sel <- sel & startsWith(files, info$code[[1]])
@@ -65,15 +81,30 @@ glass_list_files <- function(variant_id, year = NULL, doy = NULL,
 
   exts <- tools::file_ext(files)
   exts[endsWith(files, ".hdf.xml")] <- "hdf.xml"
-  year_col <- if (is.null(year)) rep(NA_integer_, length(files)) else rep(as.integer(year), length(files))
-  doy_col <- if (is.null(doy)) rep(NA_integer_, length(files)) else rep(as.integer(doy), length(files))
+  if (layout == "year_files") {
+    # 从文件名 A{y}{ddd} 解析归属合成期;命名不含该片段时退化为年/无 DOY
+    atok <- regmatches(files, regexpr("A[0-9]{7}", files))
+    if (length(atok) == length(files)) {
+      year_col <- as.integer(substr(atok, 2, 5))
+      doy_col <- as.integer(substr(atok, 6, 8))
+    } else {
+      year_col <- rep(as.integer(year), length(files))
+      doy_col <- rep(NA_integer_, length(files))
+    }
+  } else {
+    year_col <- if (is.null(year)) rep(NA_integer_, length(files)) else rep(as.integer(year), length(files))
+    doy_col <- if (is.null(doy)) rep(NA_integer_, length(files)) else rep(as.integer(doy), length(files))
+  }
   tibble::tibble(
     filename = files,
     url = paste0(url_folder, files),
     variant_id = rep(variant_id, length(files)),
     year = year_col,
     doy = doy_col,
-    tile = regmatches(files, regexpr("h[0-9]{2}v[0-9]{2}", files)),
+    tile = vapply(files, function(f) {
+      m <- regmatches(f, regexpr("h[0-9]{2}v[0-9]{2}", f))
+      if (length(m)) m else NA_character_
+    }, character(1), USE.NAMES = FALSE),
     ext = exts
   )
 }

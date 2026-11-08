@@ -9,7 +9,14 @@ with politeness delays, per-file status tracking, and a
 ## Usage
 
 ``` r
-glass_download(manifest, out_dir, delay = 1, overwrite = FALSE, quiet = FALSE)
+glass_download(
+  manifest,
+  out_dir,
+  delay = 1,
+  overwrite = FALSE,
+  quiet = FALSE,
+  progress = NULL
+)
 ```
 
 ## Arguments
@@ -34,6 +41,13 @@ glass_download(manifest, out_dir, delay = 1, overwrite = FALSE, quiet = FALSE)
 - quiet:
 
   Suppress per-file console messages.
+
+- progress:
+
+  Optional callback invoked after each file as
+  `progress(i, n, filename, status)` (1-based index, total count, file
+  name, download status); use it to drive GUI progress bars. Errors
+  raised inside the callback are ignored.
 
 ## Value
 

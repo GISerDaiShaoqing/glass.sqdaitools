@@ -131,15 +131,22 @@ glass_download_file <- function(url, destfile, overwrite = FALSE,
 #' @param delay Seconds to wait between requests (be nice to the server).
 #' @param overwrite Re-download existing valid files.
 #' @param quiet Suppress per-file console messages.
+#' @param progress Optional callback invoked after each file as
+#'   `progress(i, n, filename, status)` (1-based index, total count, file
+#'   name, download status); use it to drive GUI progress bars. Errors
+#'   raised inside the callback are ignored.
 #'
 #' @return The manifest augmented with `destfile`, `status` and `size_bytes`
 #'   columns (also written to `out_dir/glass_manifest.csv`).
 #'
 #' @export
 glass_download <- function(manifest, out_dir, delay = 1, overwrite = FALSE,
-                           quiet = FALSE) {
+                           quiet = FALSE, progress = NULL) {
   if (is.null(manifest) || !all(c("filename", "url") %in% names(manifest))) {
     glass_abort("`manifest` must have at least `filename` and `url` columns")
+  }
+  if (!is.null(progress) && !is.function(progress)) {
+    glass_abort("`progress` must be NULL or a function")
   }
   if (nrow(manifest) == 0L) {
     message("empty manifest, nothing to download")
@@ -161,6 +168,9 @@ glass_download <- function(manifest, out_dir, delay = 1, overwrite = FALSE,
     status[i] <- st
     probe <- if (file.exists(destfiles[i])) destfiles[i] else paste0(destfiles[i], ".part")
     if (file.exists(probe)) size_bytes[i] <- as.numeric(file.info(probe)$size)
+    if (!is.null(progress)) {
+      tryCatch(progress(i, n, manifest$filename[i], st), error = function(e) NULL)
+    }
     if (i < n && delay > 0) Sys.sleep(delay)
   }
 

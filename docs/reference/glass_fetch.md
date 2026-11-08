@@ -24,7 +24,8 @@ glass_fetch(
   dry_run = FALSE,
   delay = 1,
   overwrite = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  progress = NULL
 )
 ```
 
@@ -41,7 +42,8 @@ glass_fetch(
 - roi:
 
   Optional spatial selection (`sf`/`sfc`). Mutually exclusive with
-  `tiles`.
+  `tiles`. Leave both `roi` and `tiles` unset for global (CMG) variants
+  that carry no tiles.
 
 - tiles:
 
@@ -63,7 +65,7 @@ glass_fetch(
 
   Only return the file manifest without downloading.
 
-- delay, overwrite, quiet:
+- delay, overwrite, quiet, progress:
 
   Passed to
   [`glass_download()`](https://gisersqdai.top/glass.sqdaitools/reference/glass_download.md).

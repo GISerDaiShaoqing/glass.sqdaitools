@@ -15,7 +15,8 @@ glass_fetch(
   dry_run = FALSE,
   delay = 1,
   overwrite = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  progress = NULL
 )
 }
 \arguments{
@@ -24,7 +25,8 @@ glass_fetch(
 \item{from, to}{Date range ("YYYY-mm-dd" or Date).}
 
 \item{roi}{Optional spatial selection (\code{sf}/\code{sfc}). Mutually exclusive
-with \code{tiles}.}
+with \code{tiles}. Leave both \code{roi} and \code{tiles} unset for global (CMG)
+variants that carry no tiles.}
 
 \item{tiles}{Optional explicit tile ids, e.g. \code{c("h28v05")} or
 \code{c("h27v05", "h28v05")}.}
@@ -37,7 +39,7 @@ those starting inside it).}
 
 \item{dry_run}{Only return the file manifest without downloading.}
 
-\item{delay, overwrite, quiet}{Passed to \code{\link[=glass_download]{glass_download()}}.}
+\item{delay, overwrite, quiet, progress}{Passed to \code{\link[=glass_download]{glass_download()}}.}
 }
 \value{
 A tibble manifest; with download \code{status} when not a dry run.

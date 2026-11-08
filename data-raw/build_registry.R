@@ -134,7 +134,7 @@ for (vid in c("LAI_MODIS_250M", "NDVI_MODIS_250M", "EVI_MODIS_250M", "FVC_MODIS_
   derived$observed_years[derived$variant_id == vid] <- y
 }
 
-# ---------- 4. 样例核验层(LAI/NDVI/EVI/FVC/Ta) ----------
+# ---------- 4. 样例核验层(LAI/NDVI/EVI/FVC/Ta 硬编码种子 + verify_batch.R 批量结果) ----------
 overlay <- tibble(
   variant_id = c("LAI_MODIS_250M", "NDVI_MODIS_250M", "EVI_MODIS_250M",
                  "FVC_MODIS_500M", "Ta_MODIS"),
@@ -149,18 +149,32 @@ overlay <- tibble(
   valid_max = c(10, 1, 1, NA, NA),
   verified = TRUE
 )
+# 批量核验叠加(verify_batch.R 产出);同 variant_id 时 CSV 行优先于种子
+overlay_csv <- "data-raw/verified_overlay.csv"
+if (file.exists(overlay_csv)) {
+  extra <- read.csv(overlay_csv, stringsAsFactors = FALSE)
+  extra$cadence_days <- as.integer(extra$cadence_days)
+  cat("叠加批量核验:", nrow(extra), "行 ->", overlay_csv, "\n")
+  overlay <- bind_rows(extra, overlay[!overlay$variant_id %in% extra$variant_id, ])
+}
 
 glass_products <- derived
 glass_products$long_name <- long_names[glass_products$product]
-for (cn in setdiff(names(overlay), "variant_id")) glass_products[[cn]] <- NA
+# 只补缺失列,不整体重建(保留 archive 扫描/补探得到的 observed_years 等)
+for (cn in setdiff(names(overlay), c("variant_id", names(glass_products)))) {
+  glass_products[[cn]] <- NA
+}
 idx <- match(overlay$variant_id, glass_products$variant_id)
 iok <- which(!is.na(idx))
-for (cn in setdiff(names(overlay), c("variant_id"))) {
-  glass_products[[cn]][idx[iok]] <- overlay[[cn]][iok]
+# 逐值回填;overlay 里为 NA 的格子不覆盖已有值
+for (cn in setdiff(names(overlay), "variant_id")) {
+  v <- overlay[[cn]][iok]
+  has <- !is.na(v)
+  if (any(has)) glass_products[[cn]][idx[iok][has]] <- v[has]
 }
 glass_products$verified[is.na(glass_products$verified)] <- FALSE
-glass_products$notes <- ifelse(
-  glass_products$verified,
+glass_products$notes[is.na(glass_products$notes)] <- ifelse(
+  glass_products$verified[is.na(glass_products$notes)],
   "verified against a sample granule (naming, fill/scale bands metadata)",
   "skeleton from an archive directory scan; year coverage and band metadata not verified"
 )

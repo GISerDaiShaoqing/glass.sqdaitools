@@ -62,7 +62,8 @@ registry variant -&gt; <code><a href="glass_tiles_for_bbox.html">glass_tiles_for
 <span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  delay <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -80,7 +81,8 @@ registry variant -&gt; <code><a href="glass_tiles_for_bbox.html">glass_tiles_for
 
 <dt id="arg-roi">roi<a class="anchor" aria-label="anchor" href="#arg-roi"></a></dt>
 <dd><p>Optional spatial selection (<code>sf</code>/<code>sfc</code>). Mutually exclusive
-with <code>tiles</code>.</p></dd>
+with <code>tiles</code>. Leave both <code>roi</code> and <code>tiles</code> unset for global (CMG)
+variants that carry no tiles.</p></dd>
 
 
 <dt id="arg-tiles">tiles<a class="anchor" aria-label="anchor" href="#arg-tiles"></a></dt>
@@ -102,7 +104,7 @@ those starting inside it).</p></dd>
 <dd><p>Only return the file manifest without downloading.</p></dd>
 
 
-<dt id="arg-delay-overwrite-quiet">delay, overwrite, quiet<a class="anchor" aria-label="anchor" href="#arg-delay-overwrite-quiet"></a></dt>
+<dt id="arg-delay-overwrite-quiet-progress">delay, overwrite, quiet, progress<a class="anchor" aria-label="anchor" href="#arg-delay-overwrite-quiet-progress"></a></dt>
 <dd><p>Passed to <code><a href="glass_download.html">glass_download()</a></code>.</p></dd>
 
 </dl></div>
