@@ -37,7 +37,9 @@ glass_fetch(
 
 - from, to:
 
-  Date range ("YYYY-mm-dd" or Date).
+  Date range ("YYYY-mm-dd" or Date). Ignored for static file collections
+  (`layout = "flat"`, e.g. AGB, KGClim, Crops): those are whole-file
+  exchanges, so the full file list is fetched instead.
 
 - roi:
 

@@ -13,7 +13,7 @@ glass_download()."><meta property="og:image" content="https://gisersqdai.top/gla
 
     <a class="navbar-brand me-2" href="../index.html">glass.sqdaitools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -76,7 +76,9 @@ registry variant -&gt; <code><a href="glass_tiles_for_bbox.html">glass_tiles_for
 
 
 <dt id="arg-from-to">from, to<a class="anchor" aria-label="anchor" href="#arg-from-to"></a></dt>
-<dd><p>Date range ("YYYY-mm-dd" or Date).</p></dd>
+<dd><p>Date range ("YYYY-mm-dd" or Date). Ignored for static
+file collections (<code>layout = "flat"</code>, e.g. AGB, KGClim, Crops): those
+are whole-file exchanges, so the full file list is fetched instead.</p></dd>
 
 
 <dt id="arg-roi">roi<a class="anchor" aria-label="anchor" href="#arg-roi"></a></dt>
