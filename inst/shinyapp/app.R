@@ -362,11 +362,17 @@ server <- function(input, output, session) {
     i <- which(reg$variant_id == input$variant)
     res_txt <- reg$res[i]
     if (is.na(res_txt)) res_txt <- "CMG(全球)"
-    tem_txt <- reg$temporal_res[i]
+    cad <- reg$cadence_days[i]
+    tem_txt <- if (!is.na(cad)) {
+      if (identical(unname(cad), 1L)) "日均" else paste0(cad, " 天合成")
+    } else reg$temporal_res[i]
     if (is.na(tem_txt) || !nzchar(tem_txt)) tem_txt <- "未标注"
     pre <- ""
     if (identical(reg$layout[i], "flat")) {
       pre <- " 静态整幅集合:下载全量文件(日期不参与检索)。"
+    } else if (is.na(cad)) {
+      pre <- paste(" 周期未登记:按年份目录自检,按文件名复合码选日期;",
+                   "年度单文件保留全年。")
     }
     paste0("空间 ", res_txt, " · 周期 ", tem_txt, ".", pre)
   })

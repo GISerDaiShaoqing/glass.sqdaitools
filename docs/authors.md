@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/GISerDaiShaoqing/glass.sqdaitools/blob/HEAD/DESCRIPTION)
 
 Dai S (2026). *glass.sqdaitools: Tools for Downloading and Processing
-GLASS Land Surface Products*. R package version 0.3.0,
+GLASS Land Surface Products*. R package version 0.3.1,
 <https://gisersqdai.top/glass.sqdaitools/>.
 
     @Manual{,
       title = {glass.sqdaitools: Tools for Downloading and Processing GLASS Land Surface Products},
       author = {Shaoqing Dai},
       year = {2026},
-      note = {R package version 0.3.0},
+      note = {R package version 0.3.1},
       url = {https://gisersqdai.top/glass.sqdaitools/},
     }

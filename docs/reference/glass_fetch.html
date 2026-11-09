@@ -13,7 +13,7 @@ glass_download()."><meta property="og:image" content="https://gisersqdai.top/gla
 
     <a class="navbar-brand me-2" href="../index.html">glass.sqdaitools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,7 +95,8 @@ variants that carry no tiles.</p></dd>
 <dt id="arg-doys-mode">doys_mode<a class="anchor" aria-label="anchor" href="#arg-doys-mode"></a></dt>
 <dd><p>DOY selection mode passed to <code><a href="glass_doys.html">glass_doys()</a></code> (<code>"span"</code>
 keeps every composite overlapping the range; <code>"start"</code> keeps only
-those starting inside it).</p></dd>
+those starting inside it). Same semantics in the self-scan branch,
+calibrated against the composite dates found in the year folder.</p></dd>
 
 
 <dt id="arg-out-dir">out_dir<a class="anchor" aria-label="anchor" href="#arg-out-dir"></a></dt>
@@ -114,7 +115,39 @@ those starting inside it).</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble manifest; with download <code>status</code> when not a dry run.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Three archive shapes are handled:</p><ul><li><p><code>layout = "flat"</code> — static whole-file exchanges (AGB, KGClim, Crops,
+Albedo ABI climatologies). The date range is ignored and the full
+root listing is returned.</p></li>
+<li><p>cadence known (<code>cadence_days</code>): composite DOY folders are computed
+with <code><a href="glass_doys.html">glass_doys()</a></code> and each <code>&lt;year&gt;/&lt;doy&gt;/</code> folder is listed.</p></li>
+<li><p>cadence unknown (<code>cadence_days</code> is NA): self-scan. Each year folder
+intersecting the range is listed once and granules are filtered by
+composite codes parsed from their filenames (<code>A{yyyy}{ddd}</code>, month
+codes such as <code>.2010xx.</code>, or trailing 7-digit year codes). Single- or
+irregularly spaced composites keep the whole year; regular ones follow
+<code>doys_mode</code>. This covers products whose granules sit directly in year
+folders (FVC, Albedo AVHRR/MIX/0.5D, PAR, RN, SM, LST/AVHRR
+Daily-ODC, NDVI/MODIS 0.25°, TPSCE, AWGF LST), roots wrapped one
+level by a version dir (NPP), and year folders holding DOY sub-folders
+(Albedo MODIS 250M).</p></li>
+</ul><p>The self-scan keeps the fetch path tolerant to registry omissions: when
+an unmeasured variant turns out to have a different layout than the
+skeleton assumption, it still resolves granules from what the archive
+itself reports.</p>
+    </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># verified cadence (fast path)</span></span></span>
+<span class="r-in"><span><span class="fu">glass_fetch</span><span class="op">(</span><span class="st">"LAI_MODIS_250M"</span>, <span class="st">"2018-08-01"</span>, <span class="st">"2018-08-31"</span>, tiles <span class="op">=</span> <span class="st">"h28v05"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># cadence unknown (self-scan path)</span></span></span>
+<span class="r-in"><span><span class="fu">glass_fetch</span><span class="op">(</span><span class="st">"FVC_AVHRR_0_5D"</span>, <span class="st">"2018-08-01"</span>, <span class="st">"2018-09-30"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
