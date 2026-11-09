@@ -22,6 +22,21 @@ pkg_ver <- {
 
 logo_src <- "logo.png"
 
+# 跳转徽章:点击写入 Shiny 输入,由 R 侧 utils::browseURL 打开系统默认浏览器
+# (RStudio Viewer 对 target="_blank" 的新窗口请求会吞掉;
+#  经后端打开的方式在 Viewer 与普通浏览器里都必定弹出)
+.jump_link <- function(href, label, ic = NULL) {
+  shiny::tags$a(
+    href = "#",
+    class = "badge text-bg-light jump-badge",
+    onclick = sprintf(
+      "Shiny.setInputValue('glass_open_url', '%s', {priority: 'event'}); return false;",
+      href),
+    if (!is.null(ic)) shiny::icon(ic) else NULL,
+    label
+  )
+}
+
 card_css <- "
   body { background: #f4f7f5; }
   .glass-card { border-radius: .8rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
@@ -134,23 +149,20 @@ ui <- bslib::page_fillable(
                                         shiny::div(class = "small text-white-50",
                                                    "画研究区 → 预览清单 → 批量下载;配套桌面下载管理器 D3L Tool。"))),
                            shiny::div(class = "d-flex flex-column align-items-end gap-1",
-                                      shiny::tags$a(href = "https://gisersqdai.top/glass.sqdaitools/",
-                                                    target = "_blank",
-                                                    class = "badge text-bg-light",
-                                                    sprintf("glass.sqdaitools v%s", pkg_ver)),
+                                      shiny::tags$a(
+                                        href = "#",
+                                        class = "badge text-bg-light",
+                                        onclick = sprintf(
+                                          "Shiny.setInputValue('glass_open_url', '%s', {priority: 'event'}); return false;",
+                                          "https://gisersqdai.top/glass.sqdaitools/"),
+                                        sprintf("glass.sqdaitools v%s", pkg_ver)),
                                       shiny::div(class = "d-flex gap-1",
-                                                 shiny::tags$a(href = "https://gisersqdai.top/mycv/",
-                                                               target = "_blank",
-                                                               class = "badge text-bg-light jump-badge",
-                                                               shiny::icon("user"), "作者主页"),
-                                                 shiny::tags$a(href = "https://gisersqdai.top/glass.sqdaitools/",
-                                                               target = "_blank",
-                                                               class = "badge text-bg-light jump-badge",
-                                                               shiny::icon("box"), "本包文档"),
-                                                 shiny::tags$a(href = "https://gisersqdai.top/D3LTool/",
-                                                               target = "_blank",
-                                                               class = "badge text-bg-light jump-badge",
-                                                               shiny::icon("desktop"), "D3L Tool"))))),
+                                                 .jump_link("https://gisersqdai.top/mycv/",
+                                                            "作者主页", ic = "user"),
+                                                 .jump_link("https://gisersqdai.top/glass.sqdaitools/",
+                                                            "本包文档", ic = "box"),
+                                                 .jump_link("https://gisersqdai.top/D3LTool/",
+                                                            "D3L Tool", ic = "desktop"))))),
     # 主区地图(随窗口伸缩,52% 视口高)
     bslib::card(class = "glass-card mb-2 glass-map-card",
                 height = "52%",
@@ -220,6 +232,16 @@ server <- function(input, output, session) {
         options = leaflet::layersControlOptions(collapsed = FALSE)
       ) |>
       leaflet::setView(121.47, 31.23, zoom = 7)
+  })
+
+  # ---- 跳转徽章:外面的系统默认浏览器(兼容 RStudio Viewer) ----
+  shiny::observeEvent(input$glass_open_url, ignoreNULL = TRUE, {
+    u <- input$glass_open_url
+    if (is.character(u) && length(u) == 1L && nzchar(u)) {
+      tryCatch(utils::browseURL(u),
+               error = function(e) shiny::showNotification(
+                 paste0("打开网页失败: ", conditionMessage(e)), type = "error"))
+    }
   })
 
   # ---- 绘制 / 漫游状态机 ----
