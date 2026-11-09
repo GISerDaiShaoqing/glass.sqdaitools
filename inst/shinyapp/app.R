@@ -378,7 +378,6 @@ server <- function(input, output, session) {
                                 type = "error")
         NULL
       })
-    p$close()
     out
   }
 
