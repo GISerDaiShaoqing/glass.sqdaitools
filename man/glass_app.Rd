@@ -13,18 +13,19 @@ glass_app(port = getOption("shiny.port"))
 Returns invisibly when the app stops.
 }
 \description{
-Starts a local 'shiny' app with a 'leaflet' map: click twice on the map to
-frame your region of interest as a rectangle, pick a verified product
-variant and date range, preview the file manifest, then batch-download
-with \code{\link[=glass_fetch]{glass_fetch()}} in one click.
+Starts a local 'shiny' app with a 'leaflet' map: switch between a roam mode
+(free pan/zoom, no drawing) and a draw mode with a button, then click twice
+on the map in draw mode to frame your region of interest as a rectangle;
+pick a verified product variant and date range, preview the file manifest,
+then batch-download with \code{\link[=glass_fetch]{glass_fetch()}} in one click.
 }
 \details{
 The app is thin: everything happens through the package functions, so the
 same workflow is available non-interactively via \code{\link[=glass_fetch]{glass_fetch()}}.
-The download directory can be picked with a native folder dialog (base
-'tcltk'; works in local interactive sessions, while headless sessions fall
-back to typing the path), and a progress bar tracks each file during the
-batch download.
+The download directory can be picked with the built-in, in-page directory
+browser (package 'shinyFiles'; no native modal, works in RStudio's Viewer
+pane and in any browser); without 'shinyFiles' the path can simply be
+typed in. A progress bar tracks each file during the batch download.
 Requires 'shiny' and 'leaflet' (Suggested dependencies) to be installed.
 Base maps default to an unbiased Esri World Imagery layer; an Amap street
 layer is optional but uses GCJ-02 coordinates, so it is offset by roughly

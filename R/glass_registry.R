@@ -18,7 +18,7 @@
 #' glass_registry("LAI")
 #' glass_product_info("NDVI_MODIS_250M")
 glass_registry <- function(product = NULL, variant_id = NULL, verified_only = FALSE) {
-  tab <- glass_products
+  tab <- .read_pkg_data("glass_products")
   if (verified_only) tab <- tab[tab$verified, , drop = FALSE]
   if (!is.null(product)) tab <- tab[tab$product %in% product, , drop = FALSE]
   if (!is.null(variant_id)) tab <- tab[tab$variant_id %in% variant_id, , drop = FALSE]
@@ -31,13 +31,14 @@ glass_product_info <- function(variant_id = NULL, product = NULL) {
   if (is.null(variant_id) && is.null(product)) {
     glass_abort("`variant_id` or `product` must be provided")
   }
-  sel <- seq_len(nrow(glass_products))
-  if (!is.null(variant_id)) sel <- sel[glass_products$variant_id %in% variant_id]
-  if (!is.null(product)) sel <- sel[glass_products$product %in% product]
+  products <- .read_pkg_data("glass_products")
+  sel <- seq_len(nrow(products))
+  if (!is.null(variant_id)) sel <- sel[products$variant_id %in% variant_id]
+  if (!is.null(product)) sel <- sel[products$product %in% product]
   if (length(sel) == 0) {
     glass_abort("No registry rows match the query")
   }
-  glass_products[sel, , drop = FALSE]
+  products[sel, , drop = FALSE]
 }
 
 # informative base-R error (avoid depending on rlang)

@@ -29,7 +29,7 @@ A tibble with one row per archive variant:
 }
 }
 \usage{
-glass_products
+data(glass_products)
 }
 \description{
 A curated registry of the GLASS product archive (glass.hku.hk/archive/),

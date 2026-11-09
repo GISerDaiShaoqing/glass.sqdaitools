@@ -100,10 +100,12 @@ typical GLASS post-processing script, parameterised.
 glass_app()
 ```
 
-Draw your ROI on a Leaflet map (click twice to frame a rectangle), pick
-a verified variant and dates, preview the manifest, then download in one
-click — with a native folder-picker dialog for the output directory and
-a per-file progress bar. Requires `shiny` and `leaflet`.
+Draw your ROI on a Leaflet map (toggle roam/draw with one button, click
+twice to frame a rectangle), pick a verified variant and dates, preview
+the manifest, then download in one click — with an in-page directory
+browser for the output folder (no native dialog, works inside RStudio’s
+Viewer pane) and a per-file progress bar. Requires `shiny` and
+`leaflet`; the directory browser additionally uses `shinyFiles`.
 
 ## GUI front end: D3L Tool
 

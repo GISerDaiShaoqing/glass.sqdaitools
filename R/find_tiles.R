@@ -86,7 +86,7 @@ glass_tiles_for_sf <- function(roi) {
   out$lat_max <- bounds[, 4]
 
   # 有效瓦片集合与内置 glass_tiles 数据集对照(极角瓦片无效)
-  reg <- glass_tiles
+  reg <- .read_pkg_data("glass_tiles")
   key <- paste0(out$h, "_", out$v)
   out$valid <- key %in% paste0(reg$h, "_", reg$v)[reg$valid]
   out[, c("h", "v", "lon_min", "lon_max", "lat_min", "lat_max", "valid", "geometry")]

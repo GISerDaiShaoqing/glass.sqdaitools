@@ -23,7 +23,7 @@ for exact selection.
 ## Usage
 
 ``` r
-glass_tiles
+data(glass_tiles)
 ```
 
 ## Format

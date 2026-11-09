@@ -10,7 +10,7 @@ scaling metadata used by
 ## Usage
 
 ``` r
-glass_products
+data(glass_products)
 ```
 
 ## Format

@@ -14,7 +14,7 @@ A tibble with 648 rows and 7 columns:
 }
 }
 \usage{
-glass_tiles
+data(glass_tiles)
 }
 \description{
 The global 36 x 18 ordered grid used by tiled GLASS products (equivalent to

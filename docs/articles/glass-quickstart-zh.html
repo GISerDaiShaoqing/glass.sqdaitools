@@ -595,9 +595,11 @@
 </h2>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/glass_app.html">glass_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>在地图上点击两次框出研究区矩形,选择已核验的产品变体与日期区间,
-预览清单后一键下载——底层复用的都是上述包函数。本机运行时,下载目录可通过
-系统目录对话框选择,下载过程有逐文件进度条。 底图默认为无偏移的 Esri
+<p>用一个按钮在”漫游/绘制”间切换:绘制模式下在地图上点击两次即可框出研究区
+矩形,画完自动回到漫游;选择已核验的产品变体与日期区间,预览清单后一键
+下载——底层复用的都是上述包函数。下载目录通过内置的页面内目录浏览器
+选择(无系统级模态对话框,在 RStudio Viewer 里也不会卡住),也可直接输入
+路径;下载过程有逐文件进度条。 底图默认为无偏移的 Esri
 影像;可选高德街道图层,注意其为 GCJ-02 坐标(与 WGS84 存在约 500
 米偏移)。</p>
 </div>
