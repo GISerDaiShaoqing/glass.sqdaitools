@@ -17,6 +17,8 @@ jobs:
 
     strategy:
       fail-fast: false
+      # 限并发:防止五路同时拉 pandoc/R 安装包触发 CDN 504
+      max-parallel: 2
       matrix:
         config:
           - {os: macos-latest,   r: 'release'}

@@ -22,7 +22,9 @@ glass_fetch(
 \arguments{
 \item{variant_id}{Registry variant key.}
 
-\item{from, to}{Date range ("YYYY-mm-dd" or Date).}
+\item{from, to}{Date range ("YYYY-mm-dd" or Date). Ignored for static
+file collections (\code{layout = "flat"}, e.g. AGB, KGClim, Crops): those
+are whole-file exchanges, so the full file list is fetched instead.}
 
 \item{roi}{Optional spatial selection (\code{sf}/\code{sfc}). Mutually exclusive
 with \code{tiles}. Leave both \code{roi} and \code{tiles} unset for global (CMG)

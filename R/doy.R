@@ -28,7 +28,10 @@ glass_doys <- function(variant_id, from, to, mode = c("span", "start")) {
   if (is.na(cadence)) {
     glass_abort(paste0(
       "cadence unknown for variant '", variant_id,
-      "'; pass an explicitly verified variant or extend the registry"
+      "' - it cannot be queried by composite DOY. ",
+      "If this is a static file collection (layout \"flat\", e.g. AGB/KGClim), ",
+      "call glass_list_files() directly or use glass_fetch(), which skips ",
+      "the DOY lookup and returns the full file list."
     ))
   }
   from <- as.Date(from); to <- as.Date(to)

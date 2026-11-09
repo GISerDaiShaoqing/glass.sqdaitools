@@ -162,7 +162,9 @@ ui <- bslib::page_fillable(
                                                  .jump_link("https://gisersqdai.top/glass.sqdaitools/",
                                                             "本包文档", ic = "box"),
                                                  .jump_link("https://gisersqdai.top/D3LTool/",
-                                                            "D3L Tool", ic = "desktop"))))),
+                                                            "D3L Tool", ic = "desktop"),
+                                                 .jump_link("https://glass.hku.hk/",
+                                                            "GLASS 官网", ic = "globe"))))),
     # 主区地图(随窗口伸缩,52% 视口高)
     bslib::card(class = "glass-card mb-2 glass-map-card",
                 height = "52%",
@@ -353,7 +355,7 @@ server <- function(input, output, session) {
     })
   }
 
-  # 产品信息提示
+  # 产品信息提示(含档案布局预检提示)
   output$txt_variant_note <- shiny::renderText({
     ok <- input$variant %in% reg$variant_id
     if (!ok) return("")
@@ -362,7 +364,11 @@ server <- function(input, output, session) {
     if (is.na(res_txt)) res_txt <- "CMG(全球)"
     tem_txt <- reg$temporal_res[i]
     if (is.na(tem_txt) || !nzchar(tem_txt)) tem_txt <- "未标注"
-    paste0("空间 ", res_txt, " · 周期 ", tem_txt)
+    pre <- ""
+    if (identical(reg$layout[i], "flat")) {
+      pre <- " 静态整幅集合:下载全量文件(日期不参与检索)。"
+    }
+    paste0("空间 ", res_txt, " · 周期 ", tem_txt, ".", pre)
   })
 
   run_fetch <- function(dry_run) {
@@ -396,8 +402,9 @@ server <- function(input, output, session) {
         dry_run = dry_run, quiet = TRUE, progress = prog_cb
       ),
       error = function(e) {
-        shiny::showNotification(paste0("失败: ", conditionMessage(e)),
-                                type = "error")
+        shiny::showNotification(
+          paste0("失败(", input$variant, "): ", conditionMessage(e)),
+          type = "error", duration = 12)
         NULL
       })
     out
@@ -409,6 +416,10 @@ server <- function(input, output, session) {
       rv$manifest   <- m
       rv$manifest_n <- sprintf("%d", nrow(m))
       rv$done_txt   <- "-"
+      if (nrow(m) == 0L) {
+        rv$msg <- paste0("该产品目录下没有匹配的文件;请确认所选日期区间落在观测覆盖内,",
+                         "或到 GLASS 官网核对该变体的存档路径。")
+      }
     }
   })
 
