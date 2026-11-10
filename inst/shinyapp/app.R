@@ -66,6 +66,12 @@ card_css <- "
   .chip-green { border-top: 3px solid #2e7d32; }
   .chip-teal  { border-top: 3px solid #1b9e8f; }
   .chip-ok    { border-top: 3px solid #43a047; }
+  /* 地图卡头的叠加预览控制条 */
+  .glass-map-card > .card-header { padding: .26rem .6rem; background: #fff; }
+  .glass-map-card .shiny-input-container { margin-bottom: 0; }
+  .glass-map-card .form-select, .glass-map-card .form-control {
+      padding: .22rem .45rem; font-size: .8rem; }
+  .glass-map-card .btn-sm { padding: .2rem .55rem; }
 "
 
 ui <- bslib::page_fillable(
@@ -162,13 +168,34 @@ ui <- bslib::page_fillable(
                                                  .jump_link("https://gisersqdai.top/glass.sqdaitools/",
                                                             "本包文档", ic = "box"),
                                                  .jump_link("https://gisersqdai.top/D3LTool/",
-                                                            "D3L Tool", ic = "desktop"),
+                                                            "D3L Tool v2.7.0", ic = "desktop"),
                                                  .jump_link("https://glass.hku.hk/",
                                                             "GLASS 官网", ic = "globe"))))),
     # 主区地图(随窗口伸缩,52% 视口高)
     bslib::card(class = "glass-card mb-2 glass-map-card",
                 height = "52%",
                 full_screen = TRUE,
+                bslib::card_header(
+                  shiny::div(class = "d-flex gap-1 flex-nowrap align-items-center",
+                             shiny::selectInput("prev_layer", NULL, choices = list(),
+                                                width = "36%"),
+                             shiny::selectInput("prev_pal", NULL,
+                                                choices = c("荧光色" = "viridis",
+                                                            "地形色" = "terrain",
+                                                            "热力红" = "heat",
+                                                            "植被绿" = "green"),
+                                                selected = "viridis", width = "18%"),
+                             shiny::sliderInput("prev_opa", NULL, min = 0, max = 1,
+                                                step = 0.05, value = 0.7,
+                                                ticks = FALSE, width = "16%"),
+                             shiny::actionButton("btn_preview", "叠加",
+                                                 icon = shiny::icon("layer-group"),
+                                                 class = "btn btn-primary btn-sm",
+                                                 title = "把选中文件下采样后叠加到地图"),
+                             shiny::actionButton("btn_preview_clear", "清除",
+                                                 icon = shiny::icon("eraser"),
+                                                 class = "btn btn-outline-secondary btn-sm",
+                                                 title = "移除预览图层"))),
                 leaflet::leafletOutput("map", height = "100%"),
                 bslib::card_footer(
                   shiny::span(class = "text-muted small",
@@ -209,7 +236,9 @@ server <- function(input, output, session) {
     tiles_txt  = "-",
     manifest_n = "-",
     done_txt   = "-",
-    msg        = ""
+    msg        = "",
+    prev_groups = NULL,  # 预览候选组(data.frame,见 .glass_preview_groups)
+    prev_cache  = list() # group_key -> SpatRaster(下采样后),换色板/透明度免重算
   )
 
   output$map <- leaflet::renderLeaflet({
@@ -231,6 +260,7 @@ server <- function(input, output, session) {
       ) |>
       leaflet::addLayersControl(
         baseGroups = c("ArcGIS 影像(WGS84)", "高德街道(GCJ-02 有偏移)"),
+        overlayGroups = "产品预览",
         options = leaflet::layersControlOptions(collapsed = FALSE)
       ) |>
       leaflet::setView(121.47, 31.23, zoom = 7)
@@ -434,12 +464,93 @@ server <- function(input, output, session) {
     if (!is.null(m)) {
       rv$manifest   <- m
       rv$manifest_n <- sprintf("%d", nrow(m))
+      if (nrow(m) == 0L) {   # 空清单防御:0 行时不再访问 m$status
+        rv$done_txt    <- "-"
+        rv$status      <- NULL
+        rv$prev_groups <- NULL
+        rv$prev_cache  <- list()
+        rv$msg <- "检索到 0 个文件,未生成下载任务。"
+        return()
+      }
       n_ok <- sum(m$status %in% c("downloaded", "resumed",
                                   "resumed_partial", "skipped"))
       rv$done_txt <- sprintf("%d / %d", n_ok, nrow(m))
       rv$status   <- sprintf("下载完成:成功 %d / 共 %d 个文件(含跳过);输出目录: %s",
                              n_ok, nrow(m), input$out_dir)
+      # 预览候选组(仅本地文件存在的行),并填加预览来源下拉
+      grps <- .glass_preview_groups(m)
+      rv$prev_groups <- grps
+      rv$prev_cache  <- list()
+      if (nrow(grps)) {
+        shiny::updateSelectInput(
+          session, "prev_layer",
+          choices = setNames(grps$group_key, grps$label),
+          selected = grps$group_key[1])
+      } else {
+        shiny::updateSelectInput(session, "prev_layer", choices = list())
+      }
     }
+  })
+
+  # ---- 产品叠加预览:管线在包内(.glass_preview_raster),app 只编排进度 ----
+  preview_run <- function(entry) {
+    shiny::withProgress(message = "生成叠加预览", value = 0.15, {
+      shiny::incProgress(0.4, detail = "读取/合并/重投影")
+      roi_bbox <- if (!is.null(rv$roi)) sf::st_bbox(rv$roi) else NULL
+      .glass_preview_raster(entry$destfiles, entry$variant_id,
+                            roi_bbox = roi_bbox)
+    })
+  }
+
+  preview_redraw <- function(grp_key) {
+    rr <- rv$prev_cache[[grp_key]]
+    if (is.null(rr)) return(invisible())
+    shiny::leafletProxy("map") |>
+      leaflet::clearGroup("产品预览") |>
+      leaflet::addRasterImage(rr, colors = .glass_preview_palette(input$prev_pal),
+                              opacity = input$prev_opa, project = TRUE,
+                              maxBytes = 8 * 1024^2, group = "产品预览")
+  }
+
+  shiny::observeEvent(input$btn_preview, {
+    k <- input$prev_layer
+    if (is.null(k) || !nzchar(k) || is.null(rv$prev_groups) ||
+        !k %in% rv$prev_groups$group_key) {
+      shiny::showNotification("先下载一个批次,再从预览来源选择一个组合",
+                              type = "warning", duration = 6)
+      return()
+    }
+    gi <- match(k, rv$prev_groups$group_key)
+    entry <- list(variant_id = rv$prev_groups$variant_id[gi],
+                  destfiles  = rv$prev_groups$destfiles[[gi]])
+    rr <- tryCatch(
+      preview_run(entry),
+      error = function(e) {
+        shiny::showNotification(
+          paste0("预览失败: ", conditionMessage(e),
+                 if (grepl("系统|内存|Memory", conditionMessage(e))) "" else
+                   "(提示:缩小 ROI 或减少同时预览的瓦片可降低内存需求)"),
+          type = "error", duration = 10)
+        NULL
+      })
+    if (is.null(rr)) return()
+    rv$prev_cache[[k]] <- rr
+    preview_redraw(k)
+    rv$msg <- sprintf(
+      "预览已叠加:%s(粗化分辨率约 %.5f°,下载产物未改动)",
+      rv$prev_groups$label[gi], terra::res(rr)[1])
+  })
+
+  shiny::observeEvent(input$btn_preview_clear, {
+    shiny::leafletProxy("map") |> leaflet::clearGroup("产品预览")
+    rv$prev_cache <- list()
+    rv$msg <- "预览图层已移除。"
+  })
+
+  # 色板/透明度变化:缓存存在时仅重画(不重算 raster)
+  shiny::observeEvent(c(input$prev_pal, input$prev_opa), {
+    k <- input$prev_layer
+    if (!is.null(k) && !is.null(rv$prev_cache[[k]])) preview_redraw(k)
   })
 
   output$vb_tiles    <- shiny::renderText(rv$tiles_txt)

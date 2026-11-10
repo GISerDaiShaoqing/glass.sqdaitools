@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">glass.sqdaitools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,15 +56,15 @@
 <table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>Path</th>
 <th>Role</th>
 </tr></thead><tbody><tr><td><code>R/</code></td>
-<td>11 source files, 13 exported functions (registry / tiles / DOY / list / download / process / shiny)</td>
+<td>11 source files, 13 exported functions (registry / tiles / DOY / list / download / self-scan fetch / process / shiny)</td>
 </tr><tr><td><code>data-raw/</code></td>
 <td>One-shot build scripts: <code>crawl_archive.R</code> → <code>probe_samples.R</code> → <code>verify_bands.R</code> → <code>verify_batch.R</code> (batch variant verification) → <code>build_tiles.R</code> → <code>build_registry.R</code> (network needed)</td>
 </tr><tr><td><code>data/</code></td>
 <td>Bundled datasets <code>glass_products</code> (133 variants, 131 verified across 4 layouts) and <code>glass_tiles</code> (648 tiles)</td>
 </tr><tr><td><code>inst/shinyapp/app.R</code></td>
-<td>Two-click ROI download UI, launched by <code><a href="reference/glass_app.html">glass_app()</a></code>; thin shell over package functions</td>
+<td>Adaptive one-viewport ROI download UI (bslib + leaflet), launched by <code><a href="reference/glass_app.html">glass_app()</a></code>; roam/draw toggle, in-page directory browser (shinyFiles); thin shell over package functions</td>
 </tr><tr><td><code>tests/testthat/</code></td>
-<td>Offline unit tests (93 passing); network tests gated behind <code>GLASS_SMOKE=1</code>
+<td>Offline unit tests (113 passing); network tests gated behind <code>GLASS_SMOKE=1</code>
 </td>
 </tr><tr><td><code>vignettes/</code></td>
 <td>
@@ -99,6 +99,34 @@
 <li>Extending the registry = add the variant to <code>data-raw/verify_batch.R</code> (<code>FAMILIES</code>/<code>TARGET_IDS</code>) and rerun it, then <code>build_registry.R</code>; the batch writes <code>data-raw/verified_overlay.csv</code> which build_registry merges (CSV rows take precedence). Never edit the <code>.rda</code> by hand.</li>
 <li>
 <code>terra</code>/GDAL already apply HDF SDS scale/offset on read; <code><a href="reference/glass_read.html">glass_read()</a></code> converts the raw fill value to post-scale units before NA-ing it (see <code>dev/README.md</code> band-metadata notes).</li>
+<li>
+<strong><code>cadence_days = NA</code> 是诚实状态,不许手工补登记。</strong> <code>verify_batch.R</code> 不测 合成周期;30+ 个 verified 变体(2026-11 实测:FVC 系、Albedo AVHRR/MIX/ 0.5D、Albedo_MODIS_0_5D、FAPAR/GPP/LAI/LST/NDVI/PAR/NPP 0.5D、RN、SM、 TPSCE、AWGF、LST_AVHRR_Daily-ODC…)为 NA。<code><a href="reference/glass_fetch.html">glass_fetch()</a></code> 的 cadence-NA <strong>目录自检分支</strong>(year-loop + 文件名复合码)是正解,不要往 <code>verified_overlay.csv</code> 或 build seed 里”补 cadence”。</li>
+<li>档案实测形态(自检分支覆盖面,未来变体先归到这几类):
+<ol style="list-style-type: decimal"><li>复合文件直躺年份文件夹(<code>年/A2018217.hdf</code>,8 天/日均);</li>
+<li>年下 6 位月码(<code>.201001.</code> = YYYYMM,如 NDVI 0.25°);</li>
+<li>年下数字 DOY 子目录(<code>2018/049/</code>,如 Albedo MODIS 250M);</li>
+<li>根下版本包装目录(<code>0.5D/GLASS_NPP_0.5D_V40/</code>,NPP),自检只下探一级;</li>
+<li>地理 1° 分格 × 年度单文件(<code>n045e120/HiGLASS_…_2018_v01_LAI.tif</code>, HiGLASS LAI/FAPAR 20m;<code>.glass_fetch_geotile()</code> 按显式 <code>tiles</code> 或 ROI bbox 选格,根下分格 &gt; 60 且无选格时不自动全量列举)。 另有纯静态集合(AGB/KGClim/Crops/Albedo ABI 气候态,<code>layout = "flat"</code>, 日期不参与)。</li>
+</ol></li>
+<li>
+<strong>官网 download 卡片名 ↔︎ 登记表口径(D3LTool 对拍以此为准):</strong> <code>HiGLASS_LAI 20m</code> = <code>LAI_HR_LAI_V01</code>(卡片指 <code>archive/LAI/HR_LAI</code>,数据在 <code>V01/</code> 一层);<code>HR FAPAR</code> 卡 = <code>FAPAR_HR_FAPAR_V01</code>;<code>SRF</code> 家族正确名称是 <strong>Surface Radiation Budget Component (SRF-j)</strong>(曾误标 “Snow-free Albedo Climatology”,2026-11 正名;官网第 20 节 Snow-free 气候态的真实文件在 <code>Albedo/ABI/</code> 即 <code>Albedo_ABI_*</code> 变体);官网 LST 卡指向 <code>LST/MODIS/Daily/1KM/</code>,对应登记变体 <code>LST_MODIS_Daily</code>(url_root 已含 <code>1KM/</code>)。<strong>档案重排会让核验时的深层 url_root 过期</strong>:verify_batch 现已把 年层 URL 写进 overlay 的 <code>url_root</code> 列,配合 <code>REFRESH=TRUE</code> + <code>TARGET_IDS</code> 定点重验即可修复(见该脚本常量区)。</li>
+<li>
+<strong>命名空间卫生:</strong>包内 R 代码对 base-but-not-namespace 的函数一律限定 (<code><a href="https://rdrr.io/r/utils/head.html" class="external-link">utils::head</a></code>、<code><a href="https://rdrr.io/r/utils/data.html" class="external-link">utils::data</a></code> 等),否则 <code>R CMD check</code> 会挂 universal-formula NOTE(踩过 <code>head</code> 的坑)。</li>
+</ul></div>
+<div class="section level2">
+<h2 id="cross-surface-consistency-三面一致">Cross-surface consistency (三面一致)<a class="anchor" aria-label="anchor" href="#cross-surface-consistency-%E4%B8%89%E9%9D%A2%E4%B8%80%E8%87%B4"></a></h2>
+<ul><li>
+<code>README.Rmd</code> 是 <code>README.md</code> 的源头;改 README 一律改 <code>.Rmd</code> 再 knit, 不直接手编 <code>README.md</code>。</li>
+<li>D3L Tool 的版本承诺以 README 文字为准(现为 v2.7.0 起待对齐); D3LTool 发新版时:改 <code>README.Rmd</code> → knit →(可选)app 徽章带版本 → <code><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">pkgdown::build_site()</a></code>。</li>
+<li>pkgdown 的 <code>docs/</code> 是构建产物且入库;description 版本、man 页更新后必须 重建站点,避免页脚版本徽章漂移。</li>
+</ul></div>
+<div class="section level2">
+<h2 id="shiny-app-runtime-conventions">Shiny app runtime conventions<a class="anchor" aria-label="anchor" href="#shiny-app-runtime-conventions"></a></h2>
+<ul><li>
+<code><a href="reference/glass_app.html">glass_app()</a></code> 跑的是<strong>安装版</strong>包;调试用 <code><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">devtools::load_all()</a></code>,改 app.R 后在原 R 会话里要重启 R 或 <code>install()</code> 再 <code><a href="reference/glass_app.html">glass_app()</a></code>(命名空间缓存)。</li>
+<li>UI 一律 bslib <code>page_fillable</code> 单屏自适应,不滚动;<strong>禁止原生 modal 对话框</strong> (tcltk 模态会冻死 Shiny/RStudio Viewer 事件环,目录选择一律 shinyFiles 页面内弹窗)。</li>
+<li>外链跳转走 <code>Shiny.setInputValue(..., {priority:'event'})</code> + 服务端 <code><a href="https://rdrr.io/r/utils/browseURL.html" class="external-link">utils::browseURL</a></code>(RStudio Viewer pane 会吞掉 <code>target="_blank"</code> 的新窗)。</li>
+<li>进度条只挂 <code>on.exit(p$close(), add=TRUE)</code>,不再显式 close(双关闭警告)。</li>
 </ul></div>
 <div class="section level2">
 <h2 id="release-checklist">Release checklist<a class="anchor" aria-label="anchor" href="#release-checklist"></a></h2>

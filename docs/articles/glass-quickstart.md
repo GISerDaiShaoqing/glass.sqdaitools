@@ -393,7 +393,7 @@ glass_registry(verified_only = TRUE)[, c("variant_id", "res", "cadence_days",
 #> 108                                  https://glass.hku.hk/archive/LST/AVHRR/0.05D/
 #> 109                                    https://glass.hku.hk/archive/LST/AVHRR/05D/
 #> 110                              https://glass.hku.hk/archive/LST/AVHRR/Daily-ODC/
-#> 111                                  https://glass.hku.hk/archive/LST/MODIS/Daily/
+#> 111                              https://glass.hku.hk/archive/LST/MODIS/Daily/1KM/
 #> 112                                    https://glass.hku.hk/archive/LST/MODIS/Ins/
 #> 113                                       https://glass.hku.hk/archive/LWRT/AVHRR/
 #> 115                              https://glass.hku.hk/archive/LWRT/MODIS/InS_0.5D/

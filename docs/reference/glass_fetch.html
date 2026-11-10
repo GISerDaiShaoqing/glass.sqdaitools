@@ -13,7 +13,7 @@ glass_download()."><meta property="og:image" content="https://gisersqdai.top/gla
 
     <a class="navbar-brand me-2" href="../index.html">glass.sqdaitools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,6 +132,12 @@ folders (FVC, Albedo AVHRR/MIX/0.5D, PAR, RN, SM, LST/AVHRR
 Daily-ODC, NDVI/MODIS 0.25°, TPSCE, AWGF LST), roots wrapped one
 level by a version dir (NPP), and year folders holding DOY sub-folders
 (Albedo MODIS 250M).</p></li>
+<li><p>geographic 1° tile collections (HiGLASS LAI/FAPAR 20m, FAPAR HR):
+<code>root/&lt;nXXXeYYY&gt;/</code> holds one yearly file per tile. Selection follows
+<code>tiles</code> (e.g. <code>c("n045e120")</code>) or, with a drawn <code>roi</code>, the bbox floors
+of it; a yearly <code>_2018_</code> token is parsed for date filtering. Without a
+tile selection the root holds &gt; 60 tiles and nothing is downloaded
+until you narrow the ROI.</p></li>
 </ul><p>The self-scan keeps the fetch path tolerant to registry omissions: when
 an unmeasured variant turns out to have a different layout than the
 skeleton assumption, it still resolves granules from what the archive

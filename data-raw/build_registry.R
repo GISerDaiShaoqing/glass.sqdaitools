@@ -46,7 +46,7 @@ long_names <- c(
   RN = "All-Wave Net Radiation (NR)",
   SH = "Sensible Heat Flux (SH)",
   SM = "Soil Moisture (SM)",
-  SRF = "Snow-free Blue-sky Land Surface Albedo Climatology",
+  SRF = "Surface Radiation Budget Component (SRF-j)",
   Ta = "Land Surface Air Temperature (Ta)",
   Tsa = "Land Surface-Air Temperature Difference (Tsa)",
   TPSCE = "Snow Cover Extent over the Tibetan Plateau (TPSCE)"

@@ -1,4 +1,5 @@
 "variant_id","status","file_sample","fill_value","scale_factor","valid_min","valid_max","cadence_days","note"
+"LST_MODIS_Daily","verified_full","GLASS06A01.V01.A2020365.h25v05.2022195.hdf",0,0.01,NA,NA,1,NA
 "AWGF_LST_ABI_CMG_002deg","verified_no_band_attrs","all_sky_diurnal_lst_2021181_conus_goes16_lst_00.tif",NA,NA,NA,NA,1,"YYYYDDD daily-folder layout (layout=year_yyyddd)"
 "AWGF_LST_ABI_CMG_005deg","verified_no_band_attrs","all_sky_diurnal_lst_2021181_conus_goes16_lst_00.tif",NA,NA,NA,NA,1,"YYYYDDD daily-folder layout (layout=year_yyyddd)"
 "AWGF_LST_ABI_2km","verified_full","all_sky_diurnal_lst_2021181_conus_goes16.nc",65535,0.01,NA,NA,1,"YYYYDDD daily-folder layout (layout=year_yyyddd)"
@@ -123,7 +124,6 @@
 "FAPAR_MODIS_250M","verified_full","GLASS09D01.V60.A2025361.h25v05.2026046.hdf",255,0.004,0,1,8,NA
 "FAPAR_MODIS_500M","verified_full","GLASS09E01.V60.A2025361.h25v05.2026046.hdf",255,0.004,0,1,8,NA
 "LST_AVHRR_Daily-ODC","verified_full","GLASS08B22.V40.A1998001.2020106.hdf",0,0.02,NA,NA,NA,"year-level files (annual product)"
-"LST_MODIS_Daily","verified_full","GLASS06A01.V01.A2020365.h25v05.2022195.hdf",0,0.01,NA,NA,1,NA
 "GPP_AVHRR_0_05D","verified_full","GLASS12B02.V40.A2016001.2019363.hdf",65535,0.01,0,30,NA,"year-level files (annual product)"
 "GPP_AVHRR_0_5D","verified_full","GLASS12G02.V40.A2016001.2021040.hdf",65535,0.01,0,30,NA,"year-level files (annual product)"
 "GPP_MODIS_500M","verified_full","GLASS12E01.V60.A2025361.h25v05.2026116.hdf",65535,0.01,0,30,8,NA

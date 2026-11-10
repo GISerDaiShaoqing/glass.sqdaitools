@@ -112,7 +112,7 @@ Viewer pane) and a per-file progress bar. Requires `shiny` and
 Prefer a desktop application? [D3L
 Tool](https://github.com/GISerDaiShaoqing/D3LTool) ([online
 docs](https://gisersqdai.top/D3LTool/)) is a NASA satellite download
-manager. Its **v2.5.0** release integrates GLASS batch downloading built
+manager. Its **v2.7.0** release integrates GLASS batch downloading built
 on the skeleton of this package, while granule post-processing (fill
 values, mosaics, reprojection, temporal composites) keeps running on
 `glass.sqdaitools`. The two projects are designed as a matched pair:

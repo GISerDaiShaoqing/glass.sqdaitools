@@ -9,6 +9,33 @@ test_that("复合码 -> Date:正常 doy / 月刊码 / 非法值", {
   expect_true(is.na(cbad))
 })
 
+test_that("年度单文件 token(_2018_)与三位段 0 的 Date 解读", {
+  ca <- .glass_code_start(as.integer(c("2018000", "2019000")), month_mode = FALSE)
+  expect_equal(ca, as.Date(c("2018-01-01", "2019-01-01")))
+  info <- list(verified = TRUE, code = NA_character_)
+  files <- c("HiGLASS_LS20_n045e120_2018_v01_LAI.tif",
+             "HiGLASS_LS20_n045e120_2019_v01_LAI.tif")
+  m <- .glass_year_manifest("X_HR", info, files, "https://x/n045e120/", tile_ids = NULL)
+  expect_equal(m$year, c(2018L, 2019L))
+  expect_equal(m$start, as.Date(c("2018-01-01", "2019-01-01")))
+  expect_equal(m$doy, c(1L, 1L))
+  expect_equal(m$ext, c("tif", "tif"))
+  fspan <- .glass_year_filter(m, as.Date("2018-06-01"), as.Date("2019-03-01"), "span")
+  expect_equal(nrow(fspan), 2L)
+  fstart <- .glass_year_filter(m, as.Date("2019-01-01"), as.Date("2019-03-01"), "start")
+  expect_equal(fstart$year, 2019L)
+})
+
+test_that("bbox -> 1° 分格 id 列表(含负经/纬 defensively)", {
+  ids <- .glass_bbox_geotiles(c(xmin = 120.4, ymin = 44.6, xmax = 121.7, ymax = 45.2))
+  expect_setequal(ids, c("n044e120", "n044e121", "n045e120", "n045e121"))
+  ids2 <- .glass_bbox_geotiles(c(xmin = -1.2, ymin = -0.5, xmax = 0.2, ymax = 0.3))
+  # floor(-0.5) = -1 -> 南向格 s001;floor(0.3) = 0 -> 北向格 n000
+  expect_setequal(ids2, c("s001w002", "s001w001", "s001e000",
+                          "n000w002", "n000w001", "n000e000"))
+  expect_null(.glass_bbox_geotiles(NULL))
+})
+
 test_that("年文件夹清单:A 头复合码、jpg/非本产品/无扩展名剔除,prefix 进 url", {
   info <- list(verified = TRUE, code = "GLASS06G01")
   files <- c(

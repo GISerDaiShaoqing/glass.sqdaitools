@@ -22,6 +22,12 @@
 #'   Daily-ODC, NDVI/MODIS 0.25°, TPSCE, AWGF LST), roots wrapped one
 #'   level by a version dir (NPP), and year folders holding DOY sub-folders
 #'   (Albedo MODIS 250M).
+#' * geographic 1° tile collections (HiGLASS LAI/FAPAR 20m, FAPAR HR):
+#'   `root/<nXXXeYYY>/` holds one yearly file per tile. Selection follows
+#'   `tiles` (e.g. `c("n045e120")`) or, with a drawn `roi`, the bbox floors
+#'   of it; a yearly `_2018_` token is parsed for date filtering. Without a
+#'   tile selection the root holds > 60 tiles and nothing is downloaded
+#'   until you narrow the ROI.
 #'
 #' The self-scan keeps the fetch path tolerant to registry omissions: when
 #' an unmeasured variant turns out to have a different layout than the
@@ -65,6 +71,7 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
   }
   # 两者都空 = 全球 CMG 产品(无瓦片概念);瓦片型产品必须给其一
   t_sel <- if (!is.null(tiles)) tiles else if (!is.null(roi)) glass_tiles_for_sf(roi) else NULL
+  bbox_roi <- if (!is.null(roi)) tryCatch(sf::st_bbox(roi), error = function(e) NULL) else NULL
   if (!isTRUE(quiet) && is.null(tiles) && !is.null(t_sel) && nrow(t_sel) > 0L) {
     cat("ROI covers tiles:",
         paste(sprintf("h%02dv%02d", t_sel$h, t_sel$v), collapse = ", "), "\n")
@@ -88,13 +95,21 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
     }
     manifest <- glass_list_files(variant_id, ext = .glass_granule_exts())
     if (nrow(manifest) == 0L) {
-      .glass_static_hint(info)
-      return(tibble::tibble())
+      # 根下只有地理分格目录(HiGLASS/HR 家族)时按 ROI/参数选格列年度单文件
+      g <- .glass_fetch_geotile(variant_id, info, t_sel, bbox_roi,
+                                from, to, doys_mode, quiet,
+                                explicit_tiles = !is.null(tiles))
+      if (is.null(g)) {
+        .glass_static_hint(info)
+        return(tibble::tibble())
+      }
+      manifest <- g
     }
   } else if (is.na(cadence)) {
     # cadence 未登记:目录自检 —— 逐年列出当期文件夹,按文件名复合码自适应过滤
     manifest <- .glass_fetch_selfscan(variant_id, info, from, to,
-                                      t_sel, doys_mode, quiet)
+                                      t_sel, doys_mode, quiet, bbox_roi,
+                                      explicit_tiles = !is.null(tiles))
   } else {
     doys <- glass_doys(variant_id, from, to, mode = doys_mode)
     if (nrow(doys) == 0L) {
@@ -146,6 +161,94 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
   invisible()
 }
 
+# ---------- 内部:地理 1° 分格集合(HiGLASS / HR 家族) ----------
+# 档案形态:root/<nXXXeYYY>/HiGLASS_…_<year>_v01_<LAY>.tif —— 每分格每年一个
+# 年度单文件(无 DOY 段)。选格顺序:显式 tiles(形如 "n045e120") > ROI bbox
+# 换算(边格 ±1 floored);无任何选格参数且分格数 > 60 时不自动全量列举。
+.glass_bbox_geotiles <- function(bbox) {
+  if (is.null(bbox)) return(NULL)
+  # 分格名基于经纬度 1° 网格;非地理坐标(投影后的米制等)无法换算
+  if (abs(bbox[["ymin"]]) > 90 || abs(bbox[["ymax"]]) > 90 ||
+      abs(bbox[["xmin"]]) > 360 || abs(bbox[["xmax"]]) > 360) {
+    warning("ROI is not in geographic degrees; no geographic-tile selection performed",
+            call. = FALSE)
+    return(NULL)
+  }
+  lats <- seq(max(-89L, floor(bbox[["ymin"]])), min(89L, floor(bbox[["ymax"]])), 1L)
+  lons <- seq(max(-179L, floor(bbox[["xmin"]])), min(179L, floor(bbox[["xmax"]])), 1L)
+  lt <- ifelse(lats >= 0L, sprintf("n%03d", lats), sprintf("s%03d", abs(lats)))
+  ln <- ifelse(lons >= 0L, sprintf("e%03d", lons), sprintf("w%03d", abs(lons)))
+  sort(as.vector(outer(lt, ln, paste0)))
+}
+
+.glass_fetch_geotile <- function(variant_id, info, t_sel, bbox_roi,
+                                 from, to, doys_mode, quiet,
+                                 refs = NULL, explicit_tiles = FALSE) {
+  root <- info$url_root[[1]]
+  if (is.null(refs)) refs <- .glass_fetch_hrefs_safe(root)
+  dirs <- grep("^[ns][0-9]{3}[ew][0-9]{3}/$", setdiff(refs, "../"),
+               value = TRUE)
+  if (!length(dirs)) return(invisible(NULL))
+  tile_ids <- .glass_tile_ids(t_sel)
+  want <- NULL
+  if (!is.null(tile_ids) && length(tile_ids)) {
+    want <- tile_ids[grepl("^[ns][0-9]{3}[ew][0-9]{3}$", tile_ids)]
+    if (!length(want) && explicit_tiles) {
+      if (!isTRUE(quiet)) {
+        message("tiles do not look like geographic ids (n045e120 style); ",
+                "ignored for this collection")
+      }
+      return(invisible(NULL))
+    }
+  }
+  # 显式给了 tiles 就尊重用户选择;只有 tiles 未提供/不自带地理格时才用 ROI bbox
+  if (is.null(want) || !length(want)) want <- .glass_bbox_geotiles(bbox_roi)
+  n_all <- length(dirs)
+  if (is.null(want) || !length(want)) {
+    if (!isTRUE(quiet)) {
+      message(sprintf(
+        "geographic tile collection under %s (%d tiles, one yearly file each). ",
+        root, n_all),
+        "Pass tiles = c(\"n045e120\", ...) for tiles you want, or draw a ROI.")
+    }
+    return(invisible(NULL))
+  }
+  if (length(want) > 60L) {
+    message("too many geographic tiles selected (", length(want),
+            "); the ROI is too large for this collection")
+    return(invisible(NULL))
+  }
+  avail <- sub("/$", "", dirs)
+  want <- want[want %in% avail]
+  if (!length(want)) {
+    if (!isTRUE(quiet)) message("requested geographic tile(s) not present in the archive")
+    return(.glass_list_files_empty(variant_id))
+  }
+  manifest <- list()
+  for (tg in want) {
+    fl <- tryCatch(.glass_fetch_hrefs(paste0(root, tg, "/")),
+                   error = function(e) character(0))
+    if (length(fl)) {
+      m <- .glass_year_manifest(variant_id, info, fl,
+                                paste0(root, tg, "/"), tile_ids = NULL)
+      if (!is.null(m) && nrow(m)) {
+        m <- .glass_year_filter(m, from, to, doys_mode)
+        if (nrow(m)) manifest[[length(manifest) + 1L]] <- m
+      }
+    }
+    Sys.sleep(0.3)
+  }
+  if (!length(manifest)) {
+    if (!isTRUE(quiet)) {
+      message("no granules in the selected tile(s) between ",
+              format(from), " and ", format(to))
+    }
+    return(.glass_list_files_empty(variant_id))
+  }
+  out <- dplyr::bind_rows(manifest)
+  out[!duplicated(out$filename), , drop = FALSE]
+}
+
 # ---------- 内部:cadence 未登记时的目录自检 ----------
 # 对 from..to 覆盖的每个年份:
 #   1) 列 `root/<year>/`;
@@ -153,7 +256,8 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
 #   3) 年下是数字 DOY 子目录 -> 按目录增量估 cadence,再按区间选目录下探;
 #   4) 根下既无年份也无文件而只有一个包装目录(NPP …_V40/) -> 下探一级重试。
 .glass_fetch_selfscan <- function(variant_id, info, from, to,
-                                  t_sel, doys_mode, quiet) {
+                                  t_sel, doys_mode, quiet, bbox_roi = NULL,
+                                  explicit_tiles = FALSE) {
   root <- info$url_root[[1]]
   tile_ids <- .glass_tile_ids(
     if (is.null(t_sel) || !nrow(t_sel)) NULL else t_sel)
@@ -195,6 +299,10 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
 
   # 根下直接是 granule(罕见形态):按当前区间一次列出
   if (!length(yr_dirs)) {
+    g <- .glass_fetch_geotile(variant_id, info, t_sel, bbox_roi,
+                              from, to, doys_mode, quiet, refs,
+                              explicit_tiles = explicit_tiles)
+    if (!is.null(g)) return(g)
     if (!length(refs[!grepl("/$", refs)])) {
       message("no year folders and no granules under ", root,
               " - check the GLASS site for this variant")
@@ -256,8 +364,14 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
   } else {
     ty <- code %/% 1000L
     v <- code %% 1000L
-    ok <- !is.na(v) & v >= 1L & v <= 366L
-    if (any(ok)) out[ok] <- as.Date(v[ok] - 1L, origin = sprintf("%d-01-01", ty[ok]))
+    # 三位段 0 表示“年度单文件”标记(见 .glass_year_manifest 的 _2018_ 后缀识别)
+    ok <- !is.na(v) & ((v == 0L) | (v >= 1L & v <= 366L))
+    if (any(ok)) {
+      i0 <- ok & v == 0L
+      if (any(i0)) out[i0] <- as.Date(sprintf("%d-01-01", ty[i0]))
+      i1 <- ok & v >= 1L
+      if (any(i1)) out[i1] <- as.Date(v[i1] - 1L, origin = sprintf("%d-01-01", ty[i1]))
+    }
   }
   out
 }
@@ -282,9 +396,10 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
   # 复合码识别(按优先级/位置):
   #   1) A+7 位,如 A2018217(LAI/FVC/Albedo 的主流命名);
   #   2) 6 位月刊码(需非数字边界,如 GLASS13J01.201001.);
-  #   3) 7 位 doy 码(如 Combined_TPSCE_1981213.dat / global_…_2011001.nc)。
+  #   3) 7 位 doy 码(如 Combined_TPSCE_1981213.dat / global_…_2011001.nc);
+  #   4) 独立四位年字段(如 HiGLASS_LS20_n045e120_2018_v01_LAI.tif)。
   # 同一行里 6 位与 7 位候选并存时取位置更早者(月码先于版本时间戳出现)。
-  team <- rep(NA_integer_, length(files))          # 编码:月刊码按 YYYYMM;doy 码按 YYYYDDD
+  team <- rep(NA_integer_, length(files))          # 编码:月刊码 YYYYMM;doy 码 YYYYDDD
   sma <- regexpr("A[0-9]{7}", files)
   ia <- which(sma > 0L)
   if (length(ia)) {
@@ -294,18 +409,24 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
   sk7 <- regexpr("(19|20)[0-9]{5}", files)
   # 6 位候选:跟着一个非数字边界,避免切进 7 位 doy 码内部
   sm6 <- regexpr("(19|20)[0-9]{4}[^0-9]", files)
+  # 年度单文件候选:_2018_ 独立四位年段(编码 team = 年*1000,三位段 0)
+  smy <- regexpr("_(19|20)[0-9]{2}_", files)
   i6 <- which(sma < 0L & sm6 > 0L & (sk7 < 0L | sm6 < sk7))
   i7 <- which(sma < 0L & sk7 > 0L & !(sm6 > 0L & sm6 < sk7))
+  iy <- which(sma < 0L & sk7 < 0L & sm6 < 0L & smy > 0L)
   if (length(i6)) {
     team[i6] <- as.integer(substr(files[i6], sm6[i6], sm6[i6] + 5L))
   }
   if (length(i7)) {
     team[i7] <- as.integer(substr(files[i7], sk7[i7], sk7[i7] + 6L))
   }
+  if (length(iy)) {
+    team[iy] <- 1000L * as.integer(substr(files[iy], smy[iy] + 1L, smy[iy] + 4L))
+  }
 
-  # 月刊码判定:本文件夹 6 位候选 >= 7 位候选时按 YYYYMM 解读;
+  # 月刊码判定:本文件夹 6 位候选 >= 7 位候选且无年度单文件时按 YYYYMM 解读;
   # 混入的无月码行(常是版本时间戳)一律置 NA,不猜测 doy 语义
-  month_mode <- length(i6) > 0L && length(i6) >= length(i7)
+  month_mode <- length(i6) > 0L && length(i6) >= length(i7) && length(iy) == 0L
   if (month_mode) team[i7] <- NA_integer_
   div <- ifelse(month_mode, 100L, 1000L)
   yr_tok <- ifelse(is.na(team), NA_integer_, team %/% div)
@@ -324,6 +445,10 @@ glass_fetch <- function(variant_id, from, to, roi = NULL, tiles = NULL,
     doy = tdoy,
     tile = vapply(files, function(f) {
       mx <- regmatches(f, regexpr("h[0-9]{2}v[0-9]{2}", f))
+      if (!length(mx)) {
+        # 地理 1° 分格命名(HiGLASS LS20 等年度单文件)→ n045e120 样式
+        mx <- regmatches(f, regexpr("[ns][0-9]{3}[ew][0-9]{3}", f))
+      }
       if (length(mx)) mx else NA_character_
     }, character(1), USE.NAMES = FALSE),
     ext = exts,

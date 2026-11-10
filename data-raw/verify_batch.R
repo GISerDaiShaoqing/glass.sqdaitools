@@ -10,9 +10,9 @@ library(dplyr)
 library(tibble)
 
 FAMILIES <- c("LST", "ET", "GPP", "Albedo", "FAPAR")  # 本轮目标产品族;NULL = 全部
-TARGET_IDS <- NULL           # 指定变体 id 补测时配合 REFRESH=TRUE 使用
+TARGET_IDS <- "LST_MODIS_Daily"  # 本轮定点重验:档案把年层挪到 1KM/ 下,需刷新 url_root
 MAX_SAMPLE_MB <- 200         # 样例大小上限,超出只核验命名不测波段
-REFRESH <- FALSE             # TRUE 强制重跑 overlay 里已有的变体
+REFRESH <- TRUE              # TRUE 强制重跑 overlay 里已有的变体
 RECHECK_FILL_NA <- FALSE     # TRUE 追加重测 overlay 里 fill=NA 的行(如 GeoTIFF nodata 回退后)
 SAMPLES <- "data-raw/samples"
 OVERLAY_CSV <- "data-raw/verified_overlay.csv"
@@ -224,7 +224,10 @@ e <- new.env()
 load("data/glass_products.rda", envir = e)
 gp <- e$glass_products
 
-targets <- gp[(is.null(FAMILIES) | gp$product %in% FAMILIES) & !gp$verified,
+# TARGET_IDS 配 REFRESH 时,允许把已 verified 的变体拉回来重测
+force_ids <- if (isTRUE(REFRESH) && !is.null(TARGET_IDS)) TARGET_IDS else character(0)
+targets <- gp[(is.null(FAMILIES) | gp$product %in% FAMILIES) &
+                (!gp$verified | gp$variant_id %in% force_ids),
               c("variant_id", "url_root", "layout")]
 if (RECHECK_FILL_NA && file.exists(OVERLAY_CSV)) {
   ov0 <- read.csv(OVERLAY_CSV, stringsAsFactors = FALSE)
@@ -248,6 +251,7 @@ for (k in seq_len(nrow(targets))) {
                 cadence_days = NA_integer_, temporal_res = NA_character_,
                 fill_value = NA_real_, scale_factor = NA_real_,
                 valid_min = NA_real_, valid_max = NA_real_, verified = FALSE,
+                url_root = NA_character_,
                 notes = NA_character_)
   lg <- list(variant_id = vid, status = NA, file_sample = NA,
              fill_value = NA, scale_factor = NA, valid_min = NA, valid_max = NA,
@@ -260,7 +264,12 @@ for (k in seq_len(nrow(targets))) {
   doy_url <- NULL
   if (!is.null(yl)) {
     row$observed_years <- paste(range(yl$years), collapse = "-")
-    if (!is.null(yl$via)) row$notes <- paste0("data under ", paste(yl$via, collapse = "/"), "/")
+    if (!is.null(yl$via)) {
+      # 年层在 res/ 之下还包了版本/分辨率目录:把真实年层 URL 写进 overlay,
+      # 其余 overlay 行此列为 NA,build_registry 合并时不会覆盖骨架值
+      row$url_root <- yl$url
+      row$notes <- paste0("data under ", paste(yl$via, collapse = "/"), "/")
+    }
     # 逐年(最新优先)探测三种布局:DOY 目录 / YYYYDDD 日目录 / 年下直放数据文件;
     # 找到第一个有数据的年即用(避免空年份耗尽候选窗口)
     best <- NULL

@@ -30,11 +30,11 @@ R package. Follow these rules without exception.
 
 | Path | Role |
 |---|---|
-| `R/` | 11 source files, 13 exported functions (registry / tiles / DOY / list / download / process / shiny) |
+| `R/` | 11 source files, 13 exported functions (registry / tiles / DOY / list / download / self-scan fetch / process / shiny) |
 | `data-raw/` | One-shot build scripts: `crawl_archive.R` → `probe_samples.R` → `verify_bands.R` → `verify_batch.R` (batch variant verification) → `build_tiles.R` → `build_registry.R` (network needed) |
 | `data/` | Bundled datasets `glass_products` (133 variants, 131 verified across 4 layouts) and `glass_tiles` (648 tiles) |
-| `inst/shinyapp/app.R` | Two-click ROI download UI, launched by `glass_app()`; thin shell over package functions |
-| `tests/testthat/` | Offline unit tests (93 passing); network tests gated behind `GLASS_SMOKE=1` |
+| `inst/shinyapp/app.R` | Adaptive one-viewport ROI download UI (bslib + leaflet), launched by `glass_app()`; roam/draw toggle, in-page directory browser (shinyFiles); thin shell over package functions |
+| `tests/testthat/` | Offline unit tests (113 passing); network tests gated behind `GLASS_SMOKE=1` |
 | `vignettes/` | `glass-quickstart.Rmd` (EN) and `glass-quickstart-zh.Rmd` (中文), network chunks `eval=FALSE` |
 | `_pkgdown.yml`, `docs/` | pkgdown site config and built site (committed; GitHub Pages serves `/docs` on `main`) |
 | `dev/` | Local dev assets: `make_logo.R` (hex logo), `smoke_test.R`, build notes; not shipped in the tarball |
@@ -70,6 +70,56 @@ locale leak that breaks child R processes.
 - `terra`/GDAL already apply HDF SDS scale/offset on read; `glass_read()`
   converts the raw fill value to post-scale units before NA-ing it (see
   `dev/README.md` band-metadata notes).
+- **`cadence_days = NA` 是诚实状态,不许手工补登记。** `verify_batch.R` 不测
+  合成周期;30+ 个 verified 变体(2026-11 实测:FVC 系、Albedo AVHRR/MIX/
+  0.5D、Albedo_MODIS_0_5D、FAPAR/GPP/LAI/LST/NDVI/PAR/NPP 0.5D、RN、SM、
+  TPSCE、AWGF、LST_AVHRR_Daily-ODC…)为 NA。`glass_fetch()` 的 cadence-NA
+  **目录自检分支**(year-loop + 文件名复合码)是正解,不要往
+  `verified_overlay.csv` 或 build seed 里"补 cadence"。
+- 档案实测形态(自检分支覆盖面,未来变体先归到这几类):
+  1. 复合文件直躺年份文件夹(`年/A2018217.hdf`,8 天/日均);
+  2. 年下 6 位月码(`.201001.` = YYYYMM,如 NDVI 0.25°);
+  3. 年下数字 DOY 子目录(`2018/049/`,如 Albedo MODIS 250M);
+  4. 根下版本包装目录(`0.5D/GLASS_NPP_0.5D_V40/`,NPP),自检只下探一级;
+  5. 地理 1° 分格 × 年度单文件(`n045e120/HiGLASS_…_2018_v01_LAI.tif`,
+     HiGLASS LAI/FAPAR 20m;`.glass_fetch_geotile()` 按显式 `tiles` 或
+     ROI bbox 选格,根下分格 > 60 且无选格时不自动全量列举)。
+  另有纯静态集合(AGB/KGClim/Crops/Albedo ABI 气候态,`layout = "flat"`,
+  日期不参与)。
+- **官网 download 卡片名 ↔ 登记表口径(D3LTool 对拍以此为准):**
+  `HiGLASS_LAI 20m` = `LAI_HR_LAI_V01`(卡片指 `archive/LAI/HR_LAI`,数据在
+  `V01/` 一层);`HR FAPAR` 卡 = `FAPAR_HR_FAPAR_V01`;`SRF` 家族正确名称是
+  **Surface Radiation Budget Component (SRF-j)**(曾误标 "Snow-free Albedo
+  Climatology",2026-11 正名;官网第 20 节 Snow-free 气候态的真实文件在
+  `Albedo/ABI/` 即 `Albedo_ABI_*` 变体);官网 LST 卡指向
+  `LST/MODIS/Daily/1KM/`,对应登记变体 `LST_MODIS_Daily`(url_root 已含
+  `1KM/`)。**档案重排会让核验时的深层 url_root 过期**:verify_batch 现已把
+  年层 URL 写进 overlay 的 `url_root` 列,配合 `REFRESH=TRUE` + `TARGET_IDS`
+  定点重验即可修复(见该脚本常量区)。
+- **命名空间卫生:**包内 R 代码对 base-but-not-namespace 的函数一律限定
+  (`utils::head`、`utils::data` 等),否则 `R CMD check` 会挂 universal-formula
+  NOTE(踩过 `head` 的坑)。
+
+## Cross-surface consistency (三面一致)
+
+- `README.Rmd` 是 `README.md` 的源头;改 README 一律改 `.Rmd` 再 knit,
+  不直接手编 `README.md`。
+- D3L Tool 的版本承诺以 README 文字为准(现为 v2.7.0 起待对齐);
+  D3LTool 发新版时:改 `README.Rmd` → knit →(可选)app 徽章带版本 →
+  `pkgdown::build_site()`。
+- pkgdown 的 `docs/` 是构建产物且入库;description 版本、man 页更新后必须
+  重建站点,避免页脚版本徽章漂移。
+
+## Shiny app runtime conventions
+
+- `glass_app()` 跑的是**安装版**包;调试用 `devtools::load_all()`,改 app.R
+  后在原 R 会话里要重启 R 或 `install()` 再 `glass_app()`(命名空间缓存)。
+- UI 一律 bslib `page_fillable` 单屏自适应,不滚动;**禁止原生 modal 对话框**
+  (tcltk 模态会冻死 Shiny/RStudio Viewer 事件环,目录选择一律 shinyFiles
+  页面内弹窗)。
+- 外链跳转走 `Shiny.setInputValue(..., {priority:'event'})` + 服务端
+  `utils::browseURL`(RStudio Viewer pane 会吞掉 `target="_blank"` 的新窗)。
+- 进度条只挂 `on.exit(p$close(), add=TRUE)`,不再显式 close(双关闭警告)。
 
 ## Release checklist
 

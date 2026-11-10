@@ -71,6 +71,12 @@ folders (FVC, Albedo AVHRR/MIX/0.5D, PAR, RN, SM, LST/AVHRR
 Daily-ODC, NDVI/MODIS 0.25°, TPSCE, AWGF LST), roots wrapped one
 level by a version dir (NPP), and year folders holding DOY sub-folders
 (Albedo MODIS 250M).
+\item geographic 1° tile collections (HiGLASS LAI/FAPAR 20m, FAPAR HR):
+\verb{root/<nXXXeYYY>/} holds one yearly file per tile. Selection follows
+\code{tiles} (e.g. \code{c("n045e120")}) or, with a drawn \code{roi}, the bbox floors
+of it; a yearly \verb{_2018_} token is parsed for date filtering. Without a
+tile selection the root holds > 60 tiles and nothing is downloaded
+until you narrow the ROI.
 }
 
 The self-scan keeps the fetch path tolerant to registry omissions: when

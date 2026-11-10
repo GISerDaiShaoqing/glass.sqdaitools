@@ -102,6 +102,13 @@ Three archive shapes are handled:
   version dir (NPP), and year folders holding DOY sub-folders (Albedo
   MODIS 250M).
 
+- geographic 1° tile collections (HiGLASS LAI/FAPAR 20m, FAPAR HR):
+  `root/<nXXXeYYY>/` holds one yearly file per tile. Selection follows
+  `tiles` (e.g. `c("n045e120")`) or, with a drawn `roi`, the bbox floors
+  of it; a yearly `_2018_` token is parsed for date filtering. Without a
+  tile selection the root holds \> 60 tiles and nothing is downloaded
+  until you narrow the ROI.
+
 The self-scan keeps the fetch path tolerant to registry omissions: when
 an unmeasured variant turns out to have a different layout than the
 skeleton assumption, it still resolves granules from what the archive
