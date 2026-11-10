@@ -514,7 +514,7 @@ server <- function(input, output, session) {
     rr <- rv$prev_cache[[grp_key]]
     if (is.null(rr)) return(invisible())
     tryCatch(
-      shiny::leafletProxy("map") |>
+      leaflet::leafletProxy("map") |>
         leaflet::clearGroup("产品预览") |>
         leaflet::addRasterImage(rr, colors = glass.sqdaitools:::.glass_preview_palette(input$prev_pal),
                                 opacity = input$prev_opa, project = FALSE,
@@ -607,7 +607,7 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$btn_preview_clear, {
-    shiny::leafletProxy("map") |> leaflet::clearGroup("产品预览")
+    leaflet::leafletProxy("map") |> leaflet::clearGroup("产品预览")
     rv$prev_cache <- list()
     rv$msg <- "预览图层已移除。"
   })

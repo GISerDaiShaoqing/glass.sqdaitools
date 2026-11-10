@@ -144,9 +144,10 @@
     rr <- terra::crop(rr, terra::ext(-180, 180, terra::ymin(rr), terra::ymax(rr)))
   }
   if (isTRUE(to_merc)) {
-    # webmerc 的 y 在极地发散,且 GDAL 自推输出网格会吸进极地行/天文量级
-    # (leaflet 里表现为 std::vector 爆炸)。用模板栅格显式给定标准方框
-    # 与分辨率,输出网格完全受控,极冠区域由 GDAL 填 NA。
+    # webmerc 只覆盖 ±85.05°;极地行不切掉,新版 GDAL warp 会报
+    # "area of interest not accepted"(旧版容忍成巨 y,leaflet 里爆矩阵)
+    rr <- .glass_clip_webmerc_lat(rr, lim = 85.0)
+    # 模板栅格显式给定输出网格:标准方框 + 受控像素,极冠由 GDAL 填 NA
     MMAX <- 20037508.34
     side <- max(2L, ceiling(sqrt(max(target_px, 1e4))))
     tmpl <- terra::rast(terra::ext(-MMAX, MMAX, -MMAX, MMAX),
@@ -270,6 +271,22 @@
   out$size_bytes <- NA_real_
   attr(out, "n_unknown") <- n_unknown
   out
+}
+
+# 按"行中心"裁掉极地纬度带:crop 的网格吸附在粗分辨率下会整行带回 ±90,
+# 而这些行投 webmerc 时新版 GDAL 直接报 "area of interest not accepted"。
+.glass_clip_webmerc_lat <- function(rr, lim = 85.0) {
+  resy <- terra::res(rr)[2]
+  rows <- seq_len(terra::nrow(rr))
+  yy <- terra::yFromRow(rr, rows)
+  keep <- which(abs(yy) <= lim)
+  if (!length(keep) || length(keep) == length(rows)) return(rr)
+  rmin <- min(keep); rmax <- max(keep)
+  half <- resy / 2
+  e <- terra::ext(terra::xmin(rr), terra::xmax(rr),
+                  terra::yFromRow(rr, rmax) - half,
+                  terra::yFromRow(rr, rmin) + half)
+  terra::crop(rr, e)
 }
 
 # 预览配色(基础 grDevices 色板,零新依赖)
