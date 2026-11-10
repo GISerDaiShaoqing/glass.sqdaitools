@@ -10,9 +10,9 @@ library(dplyr)
 library(tibble)
 
 FAMILIES <- c("LST", "ET", "GPP", "Albedo", "FAPAR")  # 本轮目标产品族;NULL = 全部
-TARGET_IDS <- "LST_MODIS_Daily"  # 本轮定点重验:档案把年层挪到 1KM/ 下,需刷新 url_root
+TARGET_IDS <- NULL           # 指定变体 id 补测时配合 REFRESH=TRUE 使用;NULL = 不指定
 MAX_SAMPLE_MB <- 200         # 样例大小上限,超出只核验命名不测波段
-REFRESH <- TRUE              # TRUE 强制重跑 overlay 里已有的变体
+REFRESH <- FALSE             # TRUE 强制重跑 overlay 里已有的变体
 RECHECK_FILL_NA <- FALSE     # TRUE 追加重测 overlay 里 fill=NA 的行(如 GeoTIFF nodata 回退后)
 SAMPLES <- "data-raw/samples"
 OVERLAY_CSV <- "data-raw/verified_overlay.csv"

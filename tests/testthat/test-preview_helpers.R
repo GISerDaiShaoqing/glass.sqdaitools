@@ -87,6 +87,61 @@ test_that("预览管线:双瓦片 GeoTIFF 合并 + 4326 粗化(全离线)", {
                                      "LST_MODIS_Daily"), "no local granules")
 })
 
+test_that("扫描导入:变体识别(HDF 代码/HiGLASS/TPSCE/AWGF)+年/DOY 解析 + 未知剔除", {
+  skip_if_not_installed("terra")
+  d <- file.path(tempdir(), paste0("scanimp_", as.integer(Sys.time())))
+  dir.create(file.path(d, "sub"), recursive = TRUE, showWarnings = FALSE)
+  fl <- c(
+    file.path(d, "GLASS01D01.V60.A2018217.h28v05.2022013.hdf"),
+    file.path(d, "sub", "HiGLASS_LS20_n045e120_2018_v01_LAI.tif"),
+    file.path(d, "Combined_TPSCE_1981213.dat"),
+    file.path(d, "global_hourly_all_sky_lst_2011001.nc"),
+    file.path(d, "GLASS13J01.201001.V10.2023068.hdf"),
+    file.path(d, "readme.txt"),
+    file.path(d, "image_preview.jpg")
+  )
+  for (f in fl[1:5]) writeLines("x", f)
+  writeLines("x", fl[6]); writeLines("x", fl[7])
+  m <- .glass_preview_groups  # 形状 sanity 后走 scan
+  msc <- .glass_scan_import(d)
+  expect_false(nrow(msc) == 0L)
+  expect_equal(nrow(msc), 5L)
+  expect_true(attr(msc, "n_unknown") == 0L)
+  id <- setNames(msc$variant_id, msc$filename)
+  expect_equal(unname(id[basename(fl[1])]), "LAI_MODIS_250M")
+  expect_equal(unname(id[basename(fl[2])]), "LAI_HR_LAI_V01")
+  expect_equal(unname(id[basename(fl[3])]), "TPSCE_AVHRR")
+  expect_equal(unname(id[basename(fl[4])]), "AWGF_LST_GHA-LST")
+  # 年/年月/年度解析
+  y <- setNames(msc$year, msc$filename)
+  dd <- setNames(msc$doy, msc$filename)
+  expect_equal(unname(y[basename(fl[1])]), 2018L)
+  expect_equal(unname(dd[basename(fl[1])]), 217L)
+  expect_equal(unname(y[basename(fl[2])]), 2018L)
+  expect_true(unname(is.na(dd[basename(fl[2])]))[1])       # _2018_ 年度
+  expect_equal(unname(y[basename(fl[3])]), 1981L)
+  expect_equal(unname(dd[basename(fl[3])]), 213L)
+  expect_equal(unname(y[basename(fl[4])]), 2011L)
+  expect_equal(unname(dd[basename(fl[4])]), 1L)
+  # 月码文件:2010-01 -> doy 1
+  expect_equal(unname(y[basename(fl[5])]), 2010L)
+  expect_equal(unname(dd[basename(fl[5])]), 1L)
+  # 分组样式:HiGLASS 走 n045e120 瓦片名
+  g <- .glass_preview_groups(msc)
+  expect_true(any(grepl("n045e120", g$label)))
+  expect_true(any(grepl("2018 年度", g$label)))
+  # 未知变体文件:剔除并计数(专用空目录,避免误扫共享 tempdir 的其它文件)
+  d2 <- file.path(tempdir(), paste0("unknown_", format(Sys.time(), "%Y%m%d%H%M%S")))
+  dir.create(d2, showWarnings = FALSE)
+  f7 <- file.path(d2, "SomeOther.Tool.2018.v1.tif")
+  writeLines("x", f7)
+  m2 <- .glass_scan_import(d2, max_files = 100L)
+  expect_equal(nrow(m2), 0L)
+  expect_equal(attr(m2, "n_unknown"), 1L)
+  unlink(d2, recursive = TRUE)
+  unlink(d, recursive = TRUE)
+})
+
 test_that("配色板:四个候选均可生成 256 色,非法名被 match.arg 拒", {
   for (nm in c("viridis", "terrain", "heat", "green")) {
     p <- .glass_preview_palette(nm)

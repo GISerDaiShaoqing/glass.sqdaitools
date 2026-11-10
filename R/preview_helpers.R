@@ -72,6 +72,121 @@
   rr
 }
 
+# 扫描导入:把"目录里已有的下载产物"识别成与下载清单同构的行,
+# 供 .glass_preview_groups 使用——不需要任何 manifest。
+# - 递归列出 .glass_granule_exts() 扩展名(剔除 jpg/png/hdr 预览砖);
+# - 变体识别:文件首段 == 注册表 code;HiGLASS_LS20_* 按层名(LAI/FAPAR)
+#   落到 LAI_HR_LAI_V01 / FAPAR_HR_FAPAR_V01;TPSCE/AWGF 裸命名走特殊规则;
+# - 年/合成期:文件级 token(A+7 位 > 6 位月码 > 7 位年份码 > _2018_ 年度);
+# - 不能识别变体的行直接剔除,n_unknown 属性给出计数。
+.glass_scan_datetime <- function(name) {
+  y <- rep(NA_integer_, length(name))
+  d <- rep(NA_integer_, length(name))
+  # 1) A+7 位(如 A2018217)
+  sma <- regexpr("A[0-9]{7}", name)
+  ia <- which(sma > 0L)
+  if (length(ia)) {
+    tok <- substr(name[ia], sma[ia] + 1L, sma[ia] + 7L)
+    y[ia] <- as.integer(substr(tok, 1L, 4L))
+    d[ia] <- as.integer(substr(tok, 5L, 7L))
+  }
+  # 2) 6 位月码(带非数字边界,如 .201001.)=> 2010 年 1 月
+  sm6 <- regexpr("(19|20)[0-9]{4}[^0-9]", name)
+  i6 <- which(sma < 0L & sm6 > 0L)
+  if (length(i6)) {
+    tok <- substr(name[i6], sm6[i6], sm6[i6] + 5L)
+    y6 <- as.integer(substr(tok, 1L, 4L))
+    m6 <- as.integer(substr(tok, 5L, 6L))
+    ok <- m6 >= 1L & m6 <= 12L
+    y[i6][ok] <- y6[ok]
+    d[i6][ok] <- as.integer(format(as.Date(sprintf("%d-%02d-01", y6[ok], m6[ok])), "%j"))
+  }
+  # 3) 7 位 doy 码(Combined_TPSCE_1981213 / global_…_2011001)
+  sk7 <- regexpr("(19|20)[0-9]{5}", name)
+  i7 <- which(sma < 0L & sm6 < 0L & sk7 > 0L)
+  if (length(i7)) {
+    tok <- substr(name[i7], sk7[i7], sk7[i7] + 6L)
+    y[i7] <- as.integer(substr(tok, 1L, 4L))
+    d[i7] <- as.integer(substr(tok, 5L, 7L))
+  }
+  # 4) 独立四位年段(_2018_)=> 年度
+  smy <- regexpr("_(19|20)[0-9]{2}_", name)
+  iy <- which(sma < 0L & sm6 < 0L & sk7 < 0L & smy > 0L)
+  if (length(iy)) {
+    y[iy] <- as.integer(substr(name[iy], smy[iy] + 1L, smy[iy] + 4L))
+  }
+  list(year = y, doy = d)
+}
+
+.glass_scan_import <- function(dir, max_files = 5000L) {
+  empty <- data.frame(filename = character(), url = character(),
+                      variant_id = character(), year = integer(),
+                      doy = integer(), tile = character(),
+                      status = character(), destfile = character(),
+                      stringsAsFactors = FALSE)
+  empty$ext <- character()
+  empty$size_bytes <- numeric()
+  if (!nzchar(dir) || !dir.exists(dir)) {
+    glass_abort(sprintf("'%s' is not an existing directory", dir))
+  }
+  pat <- paste0("\\.(?:", paste(gsub("\\.", "\\\\.",
+    .glass_granule_exts()), collapse = "|"), ")$")
+  fl <- list.files(dir, pattern = pat, recursive = TRUE,
+                   ignore.case = TRUE, full.names = TRUE)
+  fl <- fl[!grepl("\\.(jpg|png|hdr)$", fl, ignore.case = TRUE)]
+  if (!length(fl)) return(empty)
+  if (length(fl) > max_files) {
+    glass_abort(sprintf("too many files found (%d); narrow the directory", length(fl)))
+  }
+  reg <- glass_registry(verified_only = FALSE)
+  v2 <- reg$variant_id[!is.na(reg$code)]
+  k2 <- reg$code[!is.na(reg$code)]
+  code2var <- vapply(split(v2, k2), function(x) x[1], character(1))
+  base_only <- basename(fl)
+  vid <- rep(NA_character_, length(fl))
+  special <- grepl("^HiGLASS_LS20_", base_only)
+  vid[special] <- ifelse(grepl("_LAI\\.", base_only[special]),
+                         "LAI_HR_LAI_V01", "FAPAR_HR_FAPAR_V01")
+  vid[grepl("^Combined_TPSCE", base_only) & is.na(vid)] <- "TPSCE_AVHRR"
+  vid[grepl("^global_hourly_all_sky", base_only) & is.na(vid)] <- "AWGF_LST_GHA-LST"
+  code <- vapply(base_only, function(f) {
+    p <- strsplit(f, ".", fixed = TRUE)[[1]][1]
+    if (grepl("^[A-Z][A-Za-z0-9-]{3,24}$", p) && !grepl("^20[0-9]{5}$", p)) p else NA_character_
+  }, character(1), USE.NAMES = FALSE)
+  ina <- which(is.na(vid) & !is.na(code))
+  if (length(ina)) vid[ina] <- code2var[code[ina]]
+  keep <- !is.na(vid)
+  n_unknown <- sum(!keep)
+  fl <- fl[keep]; vid <- vid[keep]; base_only <- base_only[keep]
+  if (!length(fl)) {
+    out <- empty
+    attr(out, "n_unknown") <- n_unknown
+    return(out)
+  }
+  yd <- .glass_scan_datetime(base_only)
+  tile <- vapply(base_only, function(f) {
+    mx <- regmatches(f, regexpr("h[0-9]{2}v[0-9]{2}", f))
+    if (!length(mx)) mx <- regmatches(f, regexpr("[ns][0-9]{3}[ew][0-9]{3}", f))
+    if (length(mx)) mx else NA_character_
+  }, character(1), USE.NAMES = FALSE)
+  exts <- tools::file_ext(base_only)
+  exts[endsWith(base_only, ".hdf.xml")] <- "hdf.xml"
+  out <- tibble::tibble(
+    filename = base_only,
+    url = NA_character_,
+    variant_id = vid,
+    year = yd$year,
+    doy = yd$doy,
+    tile = tile,
+    status = "downloaded",
+    destfile = normalizePath(fl, winslash = "/", mustWork = FALSE)
+  )
+  out$ext <- exts
+  out$size_bytes <- NA_real_
+  attr(out, "n_unknown") <- n_unknown
+  out
+}
+
 # 预览下采样分辨率(度/像素):按显示跨度和目标像素量估算
 .glass_preview_res <- function(bbox, target_px = 7e5) {
   if (is.null(bbox) || !all(c("xmin", "xmax", "ymin", "ymax") %in% names(bbox))) {

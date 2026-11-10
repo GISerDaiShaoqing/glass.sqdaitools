@@ -188,6 +188,12 @@ ui <- bslib::page_fillable(
                              shiny::sliderInput("prev_opa", NULL, min = 0, max = 1,
                                                 step = 0.05, value = 0.7,
                                                 ticks = FALSE, width = "16%"),
+                             if (has_shinydir) {
+                               shiny::actionButton("btn_scan_import", "扫描导入",
+                                                   icon = shiny::icon("folder-open"),
+                                                   class = "btn btn-outline-primary btn-sm",
+                                                   title = "选一个已下载目录,扫描其中的 GLASS 文件加入预览(不必重新下载)")
+                             },
                              shiny::actionButton("btn_preview", "叠加",
                                                  icon = shiny::icon("layer-group"),
                                                  class = "btn btn-primary btn-sm",
@@ -376,6 +382,7 @@ server <- function(input, output, session) {
                项目目录 = getwd(),
                用户主目录 = path.expand("~"))
     shinyFiles::shinyDirChoose(input, "browse_dir", roots = roots)
+    shinyFiles::shinyDirChoose(input, "scan_dir", roots = roots)
     shiny::observeEvent(input$browse_dir, ignoreNULL = TRUE, {
       p <- tryCatch(shinyFiles::parseDirPath(roots, input$browse_dir),
                     error = function(e) character(0))
@@ -478,7 +485,7 @@ server <- function(input, output, session) {
       rv$status   <- sprintf("下载完成:成功 %d / 共 %d 个文件(含跳过);输出目录: %s",
                              n_ok, nrow(m), input$out_dir)
       # 预览候选组(仅本地文件存在的行),并填加预览来源下拉
-      grps <- .glass_preview_groups(m)
+      grps <- glass.sqdaitools:::.glass_preview_groups(m)
       rv$prev_groups <- grps
       rv$prev_cache  <- list()
       if (nrow(grps)) {
@@ -497,7 +504,7 @@ server <- function(input, output, session) {
     shiny::withProgress(message = "生成叠加预览", value = 0.15, {
       shiny::incProgress(0.4, detail = "读取/合并/重投影")
       roi_bbox <- if (!is.null(rv$roi)) sf::st_bbox(rv$roi) else NULL
-      .glass_preview_raster(entry$destfiles, entry$variant_id,
+      glass.sqdaitools:::.glass_preview_raster(entry$destfiles, entry$variant_id,
                             roi_bbox = roi_bbox)
     })
   }
@@ -507,10 +514,60 @@ server <- function(input, output, session) {
     if (is.null(rr)) return(invisible())
     shiny::leafletProxy("map") |>
       leaflet::clearGroup("产品预览") |>
-      leaflet::addRasterImage(rr, colors = .glass_preview_palette(input$prev_pal),
+      leaflet::addRasterImage(rr, colors = glass.sqdaitools:::.glass_preview_palette(input$prev_pal),
                               opacity = input$prev_opa, project = TRUE,
                               maxBytes = 8 * 1024^2, group = "产品预览")
   }
+
+  # 扫描导入:页内目录弹窗选一个已下载目录,识别其中 GLASS 文件加入预览
+  shiny::observeEvent(input$scan_dir, ignoreNULL = TRUE, {
+    p <- tryCatch(shinyFiles::parseDirPath(roots, input$scan_dir),
+                  error = function(e) character(0))
+    if (length(p) != 1L || !nzchar(p)) return()
+    m <- tryCatch(
+      glass.sqdaitools:::.glass_scan_import(p),
+      error = function(e) {
+        shiny::showNotification(paste0("扫描失败: ", conditionMessage(e)),
+                                type = "error", duration = 10)
+        NULL
+      })
+    if (is.null(m)) return()
+    rv$prev_cache <- list()
+    n_un <- attr(m, "n_unknown")
+    if (is.null(n_un)) n_un <- 0L
+    if (nrow(m) == 0L) {
+      shiny::showNotification(
+        paste0("目录里未识别到可预览的 GLASS 文件",
+               (if (n_un > 0L) sprintf("(另有 %d 个无法识别变体)", n_un) else ""),
+               ";请确认这是下载产物所在目录。"),
+        type = "warning", duration = 9)
+      return()
+    }
+    # 与本会话已下载行合并成预览组(重复文件按 destfile 去重)
+    rows <- m
+    if (!is.null(rv$manifest) && nrow(rv$manifest) &&
+        "destfile" %in% names(rv$manifest)) {
+      okst <- rv$manifest$status %in%
+        c("downloaded", "resumed", "resumed_partial", "skipped")
+      base <- rv$manifest[okst & !is.na(rv$manifest$destfile), , drop = FALSE]
+      if (nrow(base)) rows <- dplyr::bind_rows(base, m)
+    }
+    rows <- rows[nzchar(rows$destfile), , drop = FALSE]
+    rows <- rows[!duplicated(rows$destfile), , drop = FALSE]
+    grps <- glass.sqdaitools:::.glass_preview_groups(rows)
+    rv$prev_groups <- grps
+    if (nrow(grps)) {
+      shiny::updateSelectInput(
+        session, "prev_layer",
+        choices = setNames(grps$group_key, grps$label),
+        selected = grps$group_key[1])
+      rv$msg <- sprintf("扫描导入 %d 个文件,共 %d 组可预览(未识别 %d),目录: %s",
+                        nrow(m), nrow(grps), n_un, p)
+    } else {
+      shiny::updateSelectInput(session, "prev_layer", choices = list())
+      rv$msg <- "扫描完成,但没有可预览的组合。"
+    }
+  })
 
   shiny::observeEvent(input$btn_preview, {
     k <- input$prev_layer
