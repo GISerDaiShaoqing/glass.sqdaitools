@@ -50,6 +50,8 @@ $R -e 'devtools::document()'        # regenerate man/ + NAMESPACE after roxygen 
 $R -e 'devtools::test()'            # unit tests (add GLASS_SMOKE=1 for network tests)
 $R dev/smoke_test.R                 # offline smoke; GLASS_SMOKE=1 adds end-to-end download
 $R -e 'pkgdown::build_site()'       # rebuild docs/ (rerun after logo or doc changes)
+# 本机注意:build_site 默认子进程偶发段错误(2026-11),失败时改用
+# $R -e 'pkgdown::build_site(preview = FALSE, quiet = TRUE, new_process = FALSE)'
 ```
 
 Full verification before any release: rebuild the tarball and run
@@ -104,7 +106,7 @@ locale leak that breaks child R processes.
 
 - `README.Rmd` 是 `README.md` 的源头;改 README 一律改 `.Rmd` 再 knit,
   不直接手编 `README.md`。
-- D3L Tool 的版本承诺以 README 文字为准(现为 v2.7.0 起待对齐);
+- D3L Tool 的版本承诺以 README 文字为准(已对齐 **v2.7.0**);
   D3LTool 发新版时:改 `README.Rmd` → knit →(可选)app 徽章带版本 →
   `pkgdown::build_site()`。
 - pkgdown 的 `docs/` 是构建产物且入库;description 版本、man 页更新后必须

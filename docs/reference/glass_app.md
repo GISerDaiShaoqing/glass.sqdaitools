@@ -34,10 +34,18 @@ The download directory can be picked with the built-in, in-page
 directory browser (package 'shinyFiles'; no native modal, works in
 RStudio's Viewer pane and in any browser); without 'shinyFiles' the path
 can simply be typed in. A progress bar tracks each file during the batch
-download. Requires 'shiny' and 'leaflet' (Suggested dependencies) to be
-installed. Base maps default to an unbiased Esri World Imagery layer; an
-Amap street layer is optional but uses GCJ-02 coordinates, so it is
-offset by roughly 500 meters from WGS84.
+download.
+
+After a download, the map-header controls overlay a downsampled preview
+of the downloaded granules (fill/scale from the registry, multi-tile
+mosaics, cropped to the ROI and reprojected to EPSG:4326). Previously
+downloaded data can be brought in without re-downloading with the "Scan
+Import" button, which opens the same directory browser and recognizes
+GLASS granules by naming/code; the preview shows the first SDS layer of
+multi-band products. Requires 'shiny' and 'leaflet' (Suggested
+dependencies) to be installed. Base maps default to an unbiased Esri
+World Imagery layer; an Amap street layer is optional but uses GCJ-02
+coordinates, so it is offset by roughly 500 meters from WGS84.
 
 ## Examples
 

@@ -117,7 +117,7 @@
 <h2 id="cross-surface-consistency-三面一致">Cross-surface consistency (三面一致)<a class="anchor" aria-label="anchor" href="#cross-surface-consistency-%E4%B8%89%E9%9D%A2%E4%B8%80%E8%87%B4"></a></h2>
 <ul><li>
 <code>README.Rmd</code> 是 <code>README.md</code> 的源头;改 README 一律改 <code>.Rmd</code> 再 knit, 不直接手编 <code>README.md</code>。</li>
-<li>D3L Tool 的版本承诺以 README 文字为准(现为 v2.7.0 起待对齐); D3LTool 发新版时:改 <code>README.Rmd</code> → knit →(可选)app 徽章带版本 → <code><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">pkgdown::build_site()</a></code>。</li>
+<li>D3L Tool 的版本承诺以 README 文字为准(已对齐 <strong>v2.7.0</strong>); D3LTool 发新版时:改 <code>README.Rmd</code> → knit →(可选)app 徽章带版本 → <code><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">pkgdown::build_site()</a></code>。</li>
 <li>pkgdown 的 <code>docs/</code> 是构建产物且入库;description 版本、man 页更新后必须 重建站点,避免页脚版本徽章漂移。</li>
 </ul></div>
 <div class="section level2">

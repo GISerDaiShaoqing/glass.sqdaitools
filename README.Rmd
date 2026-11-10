@@ -121,8 +121,12 @@ Draw your ROI on a Leaflet map (toggle roam/draw with one button, click twice
 to frame a rectangle), pick a verified variant and dates, preview the
 manifest, then download in one click — with an in-page directory browser for
 the output folder (no native dialog, works inside RStudio's Viewer pane) and
-a per-file progress bar. Requires `shiny` and `leaflet`; the directory
-browser additionally uses `shinyFiles`.
+a per-file progress bar. After a download finishes, the map header can
+**overlay a downsampled preview** of the granules on the basemap
+(registry-driven fill/scale, multi-tile mosaics, ROI crop, webmerc output,
+palette + opacity controls), and previously downloaded data can be brought
+in without re-downloading via the **Scan Import** folder picker. Requires
+`shiny` and `leaflet`; the directory browser additionally uses `shinyFiles`.
 
 ## GUI front end: D3L Tool
 
