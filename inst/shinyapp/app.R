@@ -517,7 +517,7 @@ server <- function(input, output, session) {
       shiny::leafletProxy("map") |>
         leaflet::clearGroup("产品预览") |>
         leaflet::addRasterImage(rr, colors = glass.sqdaitools:::.glass_preview_palette(input$prev_pal),
-                                opacity = input$prev_opa, project = TRUE,
+                                opacity = input$prev_opa, project = FALSE,
                                 maxBytes = 8 * 1024^2, group = "产品预览"),
       error = function(e) {
         shiny::showNotification(

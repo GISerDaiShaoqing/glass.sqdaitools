@@ -72,10 +72,22 @@
   rr
 }
 
+# 统一下采样:超过目标像素量时按 sqrt 比例聚合(连续量取均值)
+.glass_downsample <- function(rr, target_px = 9e5) {
+  n <- terra::ncell(rr)
+  if (n <= target_px) return(rr)
+  f <- ceiling(sqrt(n / target_px))
+  terra::aggregate(rr, f, fun = mean, na.rm = TRUE)
+}
+
 # 预览成图管线:glass_read(登记表自填 fill/scale/valid_range) -> 多瓦片合并
-#   -> ROI 外扩 0.5° 裁剪 -> 重投影 EPSG:4326 并按 .glass_preview_res 粗化。
-# 返回单层 SpatRaster(超过一层 SDS 仅取第一层,帮助文本需注明)。
-.glass_preview_raster <- function(destfiles, variant_id, roi_bbox = NULL) {
+#   -> ROI 外扩 0.5° 裁剪(自动对齐 0..360 约定) -> 长纬投影 + 统一下采样
+#   -> 0..360 绕回 -180..180 -> (to_merc) 再投 webmerc 并控像素。
+# 返回单层 SpatRaster(超过一层 SDS 仅取第一层,帮助文本需注明);
+# to_merc=TRUE 时返回 EPSG:3857,配 leaflet addRasterImage(project=FALSE) 使用
+# ——绝不让 leaflet 内部自行推目标网格(其 std::vector 会爆)。
+.glass_preview_raster <- function(destfiles, variant_id, roi_bbox = NULL,
+                                  to_merc = TRUE, target_px = 9e5) {
   ok <- file.exists(destfiles)
   fl <- destfiles[ok]
   if (!length(fl)) {
@@ -100,10 +112,10 @@
   rr <- if (length(rlist) > 1L) glass_mosaic(rlist) else rlist[[1]]
   if (terra::nlyr(rr) > 1L) rr <- rr[[1]]
   rr <- .glass_preview_crs(rr, fl[1])
-  bb2 <- c(xmin = terra::xmin(rr), xmax = terra::xmax(rr),
-           ymin = terra::ymin(rr), ymax = terra::ymax(rr))
+  # 长纬投影:不指定 res(避免把正弦米制的 bbox 当度数),随后统一下采样
   rr <- terra::project(rr, "+proj=longlat +datum=WGS84 +no_defs",
-                       res = .glass_preview_res(bb2), method = "bilinear")
+                       method = "bilinear")
+  rr <- .glass_downsample(rr, target_px)
   # 0..360 经度约定的 CMG(如 ABI 气候态 netCDF)绕回 -180..180;
   # terra::rotate 只认标准全球 0..360,其余形态手工切割重排
   if (terra::xmax(rr) > 180.5) {
@@ -130,6 +142,17 @@
   # 收尾:res 吸附可能把边界推过 180 一点,钳回 -180..180(webmerc 硬界限)
   if (terra::xmax(rr) > 180 || terra::xmin(rr) < -180) {
     rr <- terra::crop(rr, terra::ext(-180, 180, terra::ymin(rr), terra::ymax(rr)))
+  }
+  if (isTRUE(to_merc)) {
+    # webmerc 的 y 在极地发散,且 GDAL 自推输出网格会吸进极地行/天文量级
+    # (leaflet 里表现为 std::vector 爆炸)。用模板栅格显式给定标准方框
+    # 与分辨率,输出网格完全受控,极冠区域由 GDAL 填 NA。
+    MMAX <- 20037508.34
+    side <- max(2L, ceiling(sqrt(max(target_px, 1e4))))
+    tmpl <- terra::rast(terra::ext(-MMAX, MMAX, -MMAX, MMAX),
+                        nrows = side, ncols = side, nlyr = 1L,
+                        crs = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +no_defs")
+    rr <- terra::project(rr, tmpl, method = "bilinear")
   }
   rr
 }
@@ -247,17 +270,6 @@
   out$size_bytes <- NA_real_
   attr(out, "n_unknown") <- n_unknown
   out
-}
-
-# 预览下采样分辨率(度/像素):按显示跨度和目标像素量估算
-.glass_preview_res <- function(bbox, target_px = 7e5) {
-  if (is.null(bbox) || !all(c("xmin", "xmax", "ymin", "ymax") %in% names(bbox))) {
-    return(0.05)
-  }
-  dx <- max(0.05, as.numeric(bbox[["xmax"]]) - as.numeric(bbox[["xmin"]]))
-  dy <- max(0.05, as.numeric(bbox[["ymax"]]) - as.numeric(bbox[["ymin"]]))
-  r <- sqrt((dx * dy) / max(target_px, 1e4))
-  max(r, 0.0025)    # 细过 0.0025°(约 250 m)不再细化:主 LUT 开销失控
 }
 
 # 预览配色(基础 grDevices 色板,零新依赖)
