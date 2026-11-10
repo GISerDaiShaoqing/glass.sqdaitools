@@ -44,6 +44,33 @@
   out[, c("group_key", "label", "n_files", "variant_id", "destfiles")]
 }
 
+# 预览前 CRS 守卫:GLASS 的 HDF/栅粒带错 CRS(或根本没写)时有发生;
+# 把中心点投到 4326,落在地球范围外即认定 CRS 不可信,按文件名形态强制纠正
+# (hXXvYY -> MODIS 正弦球体 R=6371007.181;其余 -> EPSG:4326)。
+.glass_preview_crs <- function(rr, destname) {
+  cr <- tryCatch(terra::crs(rr, warn = FALSE), error = function(e) "")
+  trust <- !is.na(cr) && nzchar(trimws(cr))
+  if (trust) {
+    ok <- tryCatch({
+      ex <- terra::ext(rr)
+      cx <- (terra::xmin(ex) + terra::xmax(ex)) / 2
+      cy <- (terra::ymin(ex) + terra::ymax(ex)) / 2
+      pt <- terra::project(terra::vect(cbind(cx, cy), crs = cr), "EPSG:4326")
+      cd <- terra::crds(pt)
+      abs(cd[1]) <= 360.5 && abs(cd[2]) <= 90.5
+    }, error = function(e) FALSE)
+    trust <- isTRUE(ok)
+  }
+  if (trust) return(rr)
+  hv <- regmatches(destname, regexpr("h[0-9]{2}v[0-9]{2}", destname))
+  crs_new <- if (length(hv)) "+proj=sinu +R=6371007.181 +units=m"
+             else "EPSG:4326"
+  message("preview: CRS looks missing/invalid for ", basename(destname),
+          "; forcing ", crs_new)
+  terra::crs(rr) <- crs_new
+  rr
+}
+
 # 预览成图管线:glass_read(登记表自填 fill/scale/valid_range) -> 多瓦片合并
 #   -> ROI 外扩 0.5° 裁剪 -> 重投影 EPSG:4326 并按 .glass_preview_res 粗化。
 # 返回单层 SpatRaster(超过一层 SDS 仅取第一层,帮助文本需注明)。
@@ -65,6 +92,7 @@
   })
   rr <- if (length(rlist) > 1L) glass_mosaic(rlist) else rlist[[1]]
   if (terra::nlyr(rr) > 1L) rr <- rr[[1]]
+  rr <- .glass_preview_crs(rr, fl[1])
   bb2 <- c(xmin = terra::xmin(rr), xmax = terra::xmax(rr),
            ymin = terra::ymin(rr), ymax = terra::ymax(rr))
   rr <- terra::project(rr, "epsg:4326", res = .glass_preview_res(bb2),

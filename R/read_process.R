@@ -38,7 +38,9 @@ glass_read <- function(input, product = NULL, fill = NULL, scale_factor = NULL,
   # - valid_range 本身就是缩放后的范围
   if (is.null(fill)) fill <- meta$fill_value
   if (is.null(scale_factor)) scale_factor <- meta$scale_factor
-  if (is.null(valid_range) && is.finite(meta$valid_min) && is.finite(meta$valid_max)) {
+  if (is.null(valid_range) && !is.null(meta$valid_min) &&
+      !is.null(meta$valid_max) &&
+      is.finite(meta$valid_min) && is.finite(meta$valid_max)) {
     valid_range <- c(meta$valid_min, meta$valid_max)
   }
   fill_eff <- if (!is.null(fill) && is.finite(fill)) {

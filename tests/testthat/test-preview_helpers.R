@@ -142,6 +142,40 @@ test_that("扫描导入:变体识别(HDF 代码/HiGLASS/TPSCE/AWGF)+年/DOY 解�
   unlink(d, recursive = TRUE)
 })
 
+test_that("CRS 守卫:错 CRS(geocentric 米制)与空 CRS 的 h/v 文件都能纠正到 4326", {
+  skip_if_not_installed("terra")
+  d <- file.path(tempdir(), paste0("crsg_", format(Sys.time(), "%H%M%S")))
+  dir.create(d, showWarnings = FALSE)
+  on.exit(unlink(d, recursive = TRUE), add = TRUE)
+  mk <- function(crs_txt, nm) {
+    r <- terra::rast(terra::ext(-1735034, -1623212, 4163644, 4275466),
+                     nlyr = 1L, crs = crs_txt)   # 大致位于 h25v05 的正弦米制范围
+    terra::values(r) <- stats::runif(terra::ncell(r), 1, 100)
+    f <- file.path(d, nm)
+    terra::writeRaster(r, f, overwrite = TRUE, filetype = "GTiff")
+    f
+  }
+  # 1) 名字带 hXXvYY 但文件没有任何 CRS -> 应纠正为正弦并成功转 4326
+  f1 <- mk("", "GLASS01D01.V60.A2018217.h25v05.2022013.hdf")
+  rr <- suppressWarnings(.glass_preview_raster(f1, "LAI_MODIS_250M"))
+  expect_s4_class(rr, "SpatRaster")
+  expect_true(abs(terra::xres(rr)) >= 0.0025)
+  expect_true(terra::xmin(rr) >= -180.5 && terra::xmax(rr) <= 180.5)
+  # 2) 被写成了错误的 CRS(geocentric):中心点出地球 -> 纠正
+  f2 <- mk("EPSG:4978", "GLASS06A01.V01.A2000055.h25v05.2022021.hdf")
+  rr2 <- suppressWarnings(.glass_preview_raster(f2, "LST_MODIS_Daily"))
+  expect_s4_class(rr2, "SpatRaster")
+  expect_true(terra::xmin(rr2) >= -180.5 && terra::xmax(rr2) <= 180.5)
+  # 3) 本来就正确的 4326 应原样通过
+  f3 <- terra::rast(terra::ext(119.0, 121.0, 30.0, 32.0), nlyr = 1L,
+                    crs = "epsg:4326")
+  terra::values(f3) <- stats::runif(terra::ncell(f3), 1, 10)
+  f3f <- file.path(d, "fake_ok.tif")
+  terra::writeRaster(f3, f3f, overwrite = TRUE)
+  rr3 <- suppressWarnings(.glass_preview_raster(f3f, "X_TEST"))
+  expect_true(terra::xmax(rr3) <= 181)
+})
+
 test_that("配色板:四个候选均可生成 256 色,非法名被 match.arg 拒", {
   for (nm in c("viridis", "terrain", "heat", "green")) {
     p <- .glass_preview_palette(nm)
