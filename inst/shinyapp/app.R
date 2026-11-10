@@ -189,10 +189,11 @@ ui <- bslib::page_fillable(
                                                 step = 0.05, value = 0.7,
                                                 ticks = FALSE, width = "16%"),
                              if (has_shinydir) {
-                               shiny::actionButton("btn_scan_import", "扫描导入",
-                                                   icon = shiny::icon("folder-open"),
-                                                   class = "btn btn-outline-primary btn-sm",
-                                                   title = "选一个已下载目录,扫描其中的 GLASS 文件加入预览(不必重新下载)")
+                               shinyFiles::shinyDirButton(id = "scan_dir",
+                                                          label = "扫描导入",
+                                                          title = "选一个已下载目录,扫描其中的 GLASS 文件加入预览(不必重新下载)",
+                                                          icon = shiny::icon("folder-open"),
+                                                          class = "btn btn-outline-primary btn-sm")
                              },
                              shiny::actionButton("btn_preview", "叠加",
                                                  icon = shiny::icon("layer-group"),
