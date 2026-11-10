@@ -176,20 +176,36 @@ test_that("CRS 守卫:错 CRS(geocentric 米制)与空 CRS 的 h/v 文件都能�
   expect_true(terra::xmax(rr3) <= 181)
 })
 
-test_that("0..360 经度约定(ABI CMG netCDF)在管线末尾绕回 -180..180", {
+test_that("0..360 经度约定:全球/部分跨 180/ROI 负经度对齐三种形态都绕回 -180..180", {
   skip_if_not_installed("terra")
   d <- file.path(tempdir(), paste0("rot_", format(Sys.time(), "%H%M%S")))
   dir.create(d, showWarnings = FALSE)
   on.exit(unlink(d, recursive = TRUE), add = TRUE)
+  f <- file.path(d, "MODIS_Blue_Sky_Albedo_Climatology.CMG005.001.nc")
   r <- terra::rast(terra::ext(0, 360, -90, 90), nlyr = 1L, crs = "epsg:4326")
   terra::values(r) <- stats::runif(terra::ncell(r), 1, 10)
-  f <- file.path(d, "MODIS_Blue_Sky_Albedo_Climatology.CMG005.001.nc")
   terra::writeRaster(r, f, overwrite = TRUE, filetype = "GTiff")
-  suppressWarnings(terra::crs(terra::rast(f)))  # 读回
+
+  # (a) 全球 0..360,无 ROI -> terra::rotate 分支
   rr <- suppressWarnings(.glass_preview_raster(f, "Albedo_ABI_0_05D"))
   expect_true(terra::xmax(rr) <= 180.5)
   expect_true(terra::xmin(rr) >= -180.5)
   expect_true(terra::ncell(rr) < 3e6)
+
+  # (b) ROI 负经度画框(-160..-130):裁剪框右移 360 对齐后仍可预览
+  rr2 <- suppressWarnings(.glass_preview_raster(
+    f, "Albedo_ABI_0_05D",
+    roi_bbox = c(xmin = -160, xmax = -130, ymin = -20, ymax = 20)))
+  expect_true(terra::xmax(rr2) <= 180.5)
+  expect_true(terra::xmin(rr2) >= -180.5)
+  expect_true(terra::ncell(rr2) > 0L)
+
+  # (c) 部分跨 180 的形态(裁剪 150..250):手工切割重排分支
+  rr3 <- suppressWarnings(.glass_preview_raster(
+    f, "Albedo_ABI_0_05D",
+    roi_bbox = c(xmin = 150, xmax = 250, ymin = -10, ymax = 10)))
+  expect_true(terra::xmax(rr3) <= 180.5)
+  expect_true(terra::xmin(rr3) >= -180.5)
 })
 
 test_that("配色板:四个候选均可生成 256 色,非法名被 match.arg 拒", {

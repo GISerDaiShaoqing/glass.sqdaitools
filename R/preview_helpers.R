@@ -87,7 +87,13 @@
         all(c("xmin", "xmax", "ymin", "ymax") %in% names(roi_bbox))) {
       e <- terra::ext(roi_bbox[["xmin"]] - 0.5, roi_bbox[["xmax"]] + 0.5,
                       roi_bbox[["ymin"]] - 0.5, roi_bbox[["ymax"]] + 0.5)
-      r1 <- terra::crop(r1, e)
+      # 文件是 0..360 经度约定而 ROI 是 -180..180 画框时,裁剪框右移 360 对齐
+      if (terra::xmax(r1) > 180.5 && roi_bbox[["xmin"]] < 0) {
+        e <- terra::shift(e, 360)
+      }
+      r1c <- tryCatch(terra::crop(r1, e), error = function(e2) r1)
+      if (!terra::hasValues(r1c) || terra::ncell(r1c) == 0L) r1c <- r1  # 裁空则放弃裁剪
+      r1 <- r1c
     }
     r1
   })
@@ -98,11 +104,32 @@
            ymin = terra::ymin(rr), ymax = terra::ymax(rr))
   rr <- terra::project(rr, "+proj=longlat +datum=WGS84 +no_defs",
                        res = .glass_preview_res(bb2), method = "bilinear")
-  # 0..360 经度约定的 CMG(如 ABI 气候态 netCDF)绕回 -180..180,
-  # 否则 webmerc 拒收 >180 的经度(leaflet 内部再投影会整批失败)
+  # 0..360 经度约定的 CMG(如 ABI 气候态 netCDF)绕回 -180..180;
+  # terra::rotate 只认标准全球 0..360,其余形态手工切割重排
   if (terra::xmax(rr) > 180.5) {
     message("preview: longitude 0..360 convention detected; rotating to -180..180")
-    rr <- terra::rotate(rr)
+    e0 <- terra::ext(rr)
+    is_global <- terra::xmin(e0) >= -0.5 && terra::xmax(e0) <= 360.5 &&
+      (terra::xmax(e0) - terra::xmin(e0)) >= 355
+    if (is_global) {
+      rr <- terra::rotate(rr)
+    } else {
+      ymax <- terra::ymax(e0); ymin <- terra::ymin(e0)
+      w <- terra::crop(rr, terra::ext(-0.5, 180.5, ymin, ymax))
+      ee <- terra::crop(rr, terra::ext(max(180.5, terra::xmin(e0)),
+                                       terra::xmax(e0), ymin, ymax))
+      has_w <- terra::ncell(w) > 0L
+      has_e <- terra::ncell(ee) > 0L
+      if (has_e) ee <- terra::shift(ee, -360)
+      rr <- if (has_e && has_w) terra::merge(ee, w)
+            else if (has_e) ee
+            else if (has_w) w
+            else rr
+    }
+  }
+  # 收尾:res 吸附可能把边界推过 180 一点,钳回 -180..180(webmerc 硬界限)
+  if (terra::xmax(rr) > 180 || terra::xmin(rr) < -180) {
+    rr <- terra::crop(rr, terra::ext(-180, 180, terra::ymin(rr), terra::ymax(rr)))
   }
   rr
 }
