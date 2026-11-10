@@ -55,7 +55,8 @@
       ex <- terra::ext(rr)
       cx <- (terra::xmin(ex) + terra::xmax(ex)) / 2
       cy <- (terra::ymin(ex) + terra::ymax(ex)) / 2
-      pt <- terra::project(terra::vect(cbind(cx, cy), crs = cr), "EPSG:4326")
+      pt <- terra::project(terra::vect(cbind(cx, cy), crs = cr),
+                           "+proj=longlat +datum=WGS84 +no_defs")
       cd <- terra::crds(pt)
       abs(cd[1]) <= 360.5 && abs(cd[2]) <= 90.5
     }, error = function(e) FALSE)
@@ -64,7 +65,7 @@
   if (trust) return(rr)
   hv <- regmatches(destname, regexpr("h[0-9]{2}v[0-9]{2}", destname))
   crs_new <- if (length(hv)) "+proj=sinu +R=6371007.181 +units=m"
-             else "EPSG:4326"
+             else "+proj=longlat +datum=WGS84 +no_defs"
   message("preview: CRS looks missing/invalid for ", basename(destname),
           "; forcing ", crs_new)
   terra::crs(rr) <- crs_new
@@ -95,8 +96,14 @@
   rr <- .glass_preview_crs(rr, fl[1])
   bb2 <- c(xmin = terra::xmin(rr), xmax = terra::xmax(rr),
            ymin = terra::ymin(rr), ymax = terra::ymax(rr))
-  rr <- terra::project(rr, "epsg:4326", res = .glass_preview_res(bb2),
-                       method = "bilinear")
+  rr <- terra::project(rr, "+proj=longlat +datum=WGS84 +no_defs",
+                       res = .glass_preview_res(bb2), method = "bilinear")
+  # 0..360 经度约定的 CMG(如 ABI 气候态 netCDF)绕回 -180..180,
+  # 否则 webmerc 拒收 >180 的经度(leaflet 内部再投影会整批失败)
+  if (terra::xmax(rr) > 180.5) {
+    message("preview: longitude 0..360 convention detected; rotating to -180..180")
+    rr <- terra::rotate(rr)
+  }
   rr
 }
 

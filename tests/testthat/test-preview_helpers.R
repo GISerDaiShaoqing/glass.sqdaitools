@@ -176,6 +176,22 @@ test_that("CRS 守卫:错 CRS(geocentric 米制)与空 CRS 的 h/v 文件都能�
   expect_true(terra::xmax(rr3) <= 181)
 })
 
+test_that("0..360 经度约定(ABI CMG netCDF)在管线末尾绕回 -180..180", {
+  skip_if_not_installed("terra")
+  d <- file.path(tempdir(), paste0("rot_", format(Sys.time(), "%H%M%S")))
+  dir.create(d, showWarnings = FALSE)
+  on.exit(unlink(d, recursive = TRUE), add = TRUE)
+  r <- terra::rast(terra::ext(0, 360, -90, 90), nlyr = 1L, crs = "epsg:4326")
+  terra::values(r) <- stats::runif(terra::ncell(r), 1, 10)
+  f <- file.path(d, "MODIS_Blue_Sky_Albedo_Climatology.CMG005.001.nc")
+  terra::writeRaster(r, f, overwrite = TRUE, filetype = "GTiff")
+  suppressWarnings(terra::crs(terra::rast(f)))  # 读回
+  rr <- suppressWarnings(.glass_preview_raster(f, "Albedo_ABI_0_05D"))
+  expect_true(terra::xmax(rr) <= 180.5)
+  expect_true(terra::xmin(rr) >= -180.5)
+  expect_true(terra::ncell(rr) < 3e6)
+})
+
 test_that("配色板:四个候选均可生成 256 色,非法名被 match.arg 拒", {
   for (nm in c("viridis", "terrain", "heat", "green")) {
     p <- .glass_preview_palette(nm)

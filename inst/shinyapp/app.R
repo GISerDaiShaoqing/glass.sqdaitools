@@ -513,11 +513,18 @@ server <- function(input, output, session) {
   preview_redraw <- function(grp_key) {
     rr <- rv$prev_cache[[grp_key]]
     if (is.null(rr)) return(invisible())
-    shiny::leafletProxy("map") |>
-      leaflet::clearGroup("产品预览") |>
-      leaflet::addRasterImage(rr, colors = glass.sqdaitools:::.glass_preview_palette(input$prev_pal),
-                              opacity = input$prev_opa, project = TRUE,
-                              maxBytes = 8 * 1024^2, group = "产品预览")
+    tryCatch(
+      shiny::leafletProxy("map") |>
+        leaflet::clearGroup("产品预览") |>
+        leaflet::addRasterImage(rr, colors = glass.sqdaitools:::.glass_preview_palette(input$prev_pal),
+                                opacity = input$prev_opa, project = TRUE,
+                                maxBytes = 8 * 1024^2, group = "产品预览"),
+      error = function(e) {
+        shiny::showNotification(
+          paste0("叠加失败(leaflet 再投影): ", conditionMessage(e),
+                 ";可尝试换一个组合或缩小 ROI 后重试。"),
+          type = "error", duration = 10)
+      })
   }
 
   # 扫描导入:页内目录弹窗选一个已下载目录,识别其中 GLASS 文件加入预览
