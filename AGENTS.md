@@ -51,8 +51,9 @@ $R -e 'devtools::test()'            # unit tests (add GLASS_SMOKE=1 for network 
 $R dev/smoke_test.R                 # offline smoke; GLASS_SMOKE=1 adds end-to-end download
 $R dev/build_site.R                 # rebuild docs/ (rerun after logo or doc changes)
 # 本机注意:build_site 默认子进程偶发段错误(2026-11),包装脚本已固定
-# new_process = FALSE,并在构建后把 docs/LICENSE*.html 重写为纯 MIT 文本
-# (保持 GitHub 许可证徽章为 MIT,原因见下方许可证注记)——务必走此入口。
+# new_process = FALSE,并在构建后把 docs/LICENSE{,-text}.{html,md} 四页
+# 重写为纯 MIT 文本(保持 GitHub 许可证徽章为 MIT,原因见下方许可证
+# 注记)——务必走此入口。
 ```
 
 Full verification before any release: rebuild the tarball and run
@@ -147,9 +148,11 @@ locale leak that breaks child R processes.
 `LICENSE` 为 DCF 两行桩(YEAR/COPYRIGHT HOLDER,`R CMD check` 的 0-note
 要求),`LICENSE.md` 为完整 MIT 正文。**GitHub 徽章判定(licensee)不看
 DESCRIPTION**:桩文件命中 Copyright 匹配器被剔除,MIT 由 `LICENSE.md`
-提供;但若 `docs/LICENSE*.html`(pkgdown 页面)以 HTML 形态入库,其内容
-Dice 匹配失败 → 判 'other',与 MIT 并存即多候选 → 徽章 "Other"
-(2026-11 实测,r-lib 系无 docs/ 故无此问题)。解法见 `dev/build_site.R`
-(构建后把这两页重写为纯 MIT 文本,Exact 匹配 → 唯一 MIT 候选)。勿运行
+提供;但若 `docs/LICENSE{,-text}.{html,md}`(pkgdown 生成的四类许可页)
+任何一个匹配不成 MIT(HTML 模板或桩文本都会),即产生 'other' 候选,与
+MIT 并存 → 多候选 → 徽章 "Other"(2026-11 实测:只重写 .html 两个,残留
+的 .md 页仍判 other,徽章未恢复——**四个必须全覆盖**)。解法见
+`dev/build_site.R`(构建后把四页统一重写为纯 MIT 全文,Exact 匹配 →
+唯一 MIT 候选)。勿运行
 `usethis::use_mit_license()`(会重置 `LICENSE` 为桩并把 DESCRIPTION 换成
 其它措辞,引起额外 NOTE);站点重建只走 `dev/build_site.R`。
