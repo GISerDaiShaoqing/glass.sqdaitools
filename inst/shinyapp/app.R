@@ -178,16 +178,22 @@ ui <- bslib::page_fillable(
                 bslib::card_header(
                   shiny::div(class = "d-flex gap-1 flex-nowrap align-items-center",
                              shiny::selectInput("prev_layer", NULL, choices = list(),
-                                                width = "36%"),
+                                                width = "26%"),
+                             shiny::selectInput("prev_band", NULL, choices = list(),
+                                                width = "12%"),
+                             shiny::selectInput("prev_stretch", NULL,
+                                                choices = c("全范围" = "minmax",
+                                                            "2-98% 拉伸" = "p2_98"),
+                                                selected = "minmax", width = "13%"),
                              shiny::selectInput("prev_pal", NULL,
                                                 choices = c("荧光色" = "viridis",
                                                             "地形色" = "terrain",
                                                             "热力红" = "heat",
                                                             "植被绿" = "green"),
-                                                selected = "viridis", width = "18%"),
+                                                selected = "viridis", width = "13%"),
                              shiny::sliderInput("prev_opa", NULL, min = 0, max = 1,
                                                 step = 0.05, value = 0.7,
-                                                ticks = FALSE, width = "16%"),
+                                                ticks = FALSE, width = "10%"),
                              if (has_shinydir) {
                                shinyFiles::shinyDirButton(id = "scan_dir",
                                                           label = "扫描导入",
@@ -245,7 +251,7 @@ server <- function(input, output, session) {
     done_txt   = "-",
     msg        = "",
     prev_groups = NULL,  # 预览候选组(data.frame,见 .glass_preview_groups)
-    prev_cache  = list() # group_key -> SpatRaster(下采样后),换色板/透明度免重算
+    prev_cache  = list() # group_key -> list(layers=可选层表, unit=当前层, units=按层缓存的 SpatRaster)
   )
 
   output$map <- leaflet::renderLeaflet({
@@ -477,6 +483,7 @@ server <- function(input, output, session) {
         rv$status      <- NULL
         rv$prev_groups <- NULL
         rv$prev_cache  <- list()
+        shiny::updateSelectInput(session, "prev_band", choices = list())
         rv$msg <- "检索到 0 个文件,未生成下载任务。"
         return()
       }
@@ -489,6 +496,7 @@ server <- function(input, output, session) {
       grps <- glass.sqdaitools:::.glass_preview_groups(m)
       rv$prev_groups <- grps
       rv$prev_cache  <- list()
+      shiny::updateSelectInput(session, "prev_band", choices = list())
       if (nrow(grps)) {
         shiny::updateSelectInput(
           session, "prev_layer",
@@ -501,22 +509,43 @@ server <- function(input, output, session) {
   })
 
   # ---- 产品叠加预览:管线在包内(.glass_preview_raster),app 只编排进度 ----
-  preview_run <- function(entry) {
+  # 可选层枚举见 .glass_preview_layers;缓存按 (组, 层) 保存,换层/换色板/
+  # 换拉伸免重算,未命中的层才重跑管线
+  preview_run <- function(entry, u = 1L, ldf = NULL) {
     shiny::withProgress(message = "生成叠加预览", value = 0.15, {
       shiny::incProgress(0.4, detail = "读取/合并/重投影")
       roi_bbox <- if (!is.null(rv$roi)) sf::st_bbox(rv$roi) else NULL
+      if (is.null(ldf) || !nrow(ldf)) {
+        ldf <- data.frame(subds = NA_integer_, layer = 1L,
+                          label = "\u6ce2\u6bb5 1", stringsAsFactors = FALSE)
+      }
+      rw <- ldf[min(max(1L, u), nrow(ldf)), ]
       glass.sqdaitools:::.glass_preview_raster(entry$destfiles, entry$variant_id,
-                            roi_bbox = roi_bbox)
+                            roi_bbox = roi_bbox,
+                            subds = rw$subds, layer = rw$layer)
     })
   }
 
+  # 当前层 + 色板/拉伸/透明度 -> 地图重画(缓存里的 SpatRaster 不动)
   preview_redraw <- function(grp_key) {
-    rr <- rv$prev_cache[[grp_key]]
+    cch <- rv$prev_cache[[grp_key]]
+    rr <- if (!is.null(cch)) cch$units[[as.character(cch$unit)]] else NULL
     if (is.null(rr)) return(invisible())
+    cols <- glass.sqdaitools:::.glass_preview_palette(input$prev_pal)
+    if (identical(input$prev_stretch, "p2_98")) {
+      # 2-98% 分位拉伸:leaflet 传颜色函数(domain 固定,钳到分位端点)
+      dom <- glass.sqdaitools:::.glass_preview_domain(terra::values(rr), "p2_98")
+      cols <- local({
+        dom <- dom; pal <- cols
+        function(v) leaflet::colorNumeric(pal, domain = dom,
+                                          na.color = "transparent")(
+                        pmin(pmax(v, dom[1]), dom[2]))
+      })
+    }
     tryCatch(
       leaflet::leafletProxy("map") |>
         leaflet::clearGroup("产品预览") |>
-        leaflet::addRasterImage(rr, colors = glass.sqdaitools:::.glass_preview_palette(input$prev_pal),
+        leaflet::addRasterImage(rr, colors = cols,
                                 opacity = input$prev_opa, project = FALSE,
                                 maxBytes = 8 * 1024^2, group = "产品预览"),
       error = function(e) {
@@ -541,6 +570,7 @@ server <- function(input, output, session) {
       })
     if (is.null(m)) return()
     rv$prev_cache <- list()
+    shiny::updateSelectInput(session, "prev_band", choices = list())
     n_un <- attr(m, "n_unknown")
     if (is.null(n_un)) n_un <- 0L
     if (nrow(m) == 0L) {
@@ -588,8 +618,17 @@ server <- function(input, output, session) {
     gi <- match(k, rv$prev_groups$group_key)
     entry <- list(variant_id = rv$prev_groups$variant_id[gi],
                   destfiles  = rv$prev_groups$destfiles[[gi]])
+    # 枚举该组可选层(SDS/图层),填“波段”下拉;默认渲染第一层
+    ldf <- tryCatch(
+      glass.sqdaitools:::.glass_preview_layers(entry$destfiles[1]),
+      error = function(e) NULL)
+    if (is.null(ldf) || !nrow(ldf)) {
+      ldf <- data.frame(subds = NA_integer_, layer = 1L,
+                        label = "\u6ce2\u6bb5 1", stringsAsFactors = FALSE)
+    }
+    u <- 1L
     rr <- tryCatch(
-      preview_run(entry),
+      preview_run(entry, u, ldf),
       error = function(e) {
         shiny::showNotification(
           paste0("预览失败: ", conditionMessage(e),
@@ -599,21 +638,60 @@ server <- function(input, output, session) {
         NULL
       })
     if (is.null(rr)) return()
-    rv$prev_cache[[k]] <- rr
+    rv$prev_cache[[k]] <- list(layers = ldf, unit = u, units = list())
+    rv$prev_cache[[k]]$units[[as.character(u)]] <- rr
+    shiny::updateSelectInput(session, "prev_band",
+                             choices = setNames(seq_len(nrow(ldf)), ldf$label),
+                             selected = u)
     preview_redraw(k)
     rv$msg <- sprintf(
-      "预览已叠加:%s(粗化分辨率约 %.5f°,下载产物未改动)",
-      rv$prev_groups$label[gi], terra::res(rr)[1])
+      "预览已叠加:%s · %s(粗化分辨率约 %.5f°,下载产物未改动)",
+      rv$prev_groups$label[gi], ldf$label[u], terra::res(rr)[1])
+  })
+
+  # “波段”下拉:命中层缓存直接重画,未命中重跑管线(带进度条)后缓存
+  shiny::observeEvent(input$prev_band, {
+    u <- suppressWarnings(as.integer(input$prev_band))
+    k <- input$prev_layer
+    if (is.na(u) || is.null(k) || !nzchar(k) || is.null(rv$prev_groups) ||
+        !k %in% rv$prev_groups$group_key) return()
+    gi <- match(k, rv$prev_groups$group_key)
+    cch <- rv$prev_cache[[k]]
+    if (is.null(cch) || is.null(cch$layers) ||
+        u < 1L || u > nrow(cch$layers)) return()
+    if (identical(cch$unit, u) && !is.null(cch$units[[as.character(u)]])) {
+      preview_redraw(k)   # 同层:可能是拉伸/色板联动触发
+      return()
+    }
+    entry <- list(variant_id = rv$prev_groups$variant_id[gi],
+                  destfiles  = rv$prev_groups$destfiles[[gi]])
+    rr <- tryCatch(
+      preview_run(entry, u, cch$layers),
+      error = function(e) {
+        shiny::showNotification(
+          paste0("切换图层失败: ", conditionMessage(e),
+                 "(提示:缩小 ROI 或减少同时预览的瓦片可降低内存需求)"),
+          type = "error", duration = 10)
+        NULL
+      })
+    if (is.null(rr)) return()
+    cch$unit <- u
+    cch$units[[as.character(u)]] <- rr
+    rv$prev_cache[[k]] <- cch
+    preview_redraw(k)
+    rv$msg <- sprintf("预览已切换到:%s · %s",
+                      rv$prev_groups$label[gi], cch$layers$label[u])
   })
 
   shiny::observeEvent(input$btn_preview_clear, {
     leaflet::leafletProxy("map") |> leaflet::clearGroup("产品预览")
     rv$prev_cache <- list()
+    shiny::updateSelectInput(session, "prev_band", choices = list())
     rv$msg <- "预览图层已移除。"
   })
 
-  # 色板/透明度变化:缓存存在时仅重画(不重算 raster)
-  shiny::observeEvent(c(input$prev_pal, input$prev_opa), {
+  # 色板/透明度/拉伸变化:缓存存在时仅重画(不重算 raster)
+  shiny::observeEvent(c(input$prev_pal, input$prev_opa, input$prev_stretch), {
     k <- input$prev_layer
     if (!is.null(k) && !is.null(rv$prev_cache[[k]])) preview_redraw(k)
   })

@@ -16,7 +16,9 @@
       !"destfile" %in% names(m)) return(empty)
   ok_status <- c("downloaded", "resumed", "resumed_partial", "skipped")
   keep <- m$status %in% ok_status &
-          nzchar(m$destfile) & file.exists(m$destfile)
+          nzchar(m$destfile) & file.exists(m$destfile) &
+          # .hdf.xml 等元数据伴随文件不是栅格,不进预览组(fetch 会连它一起下载)
+          !grepl("\\.xml$", m$destfile, ignore.case = TRUE)
   mm <- m[keep, , drop = FALSE]
   n <- nrow(mm)
   if (!n) return(empty)
@@ -48,7 +50,9 @@
 # 把中心点投到 4326,落在地球范围外即认定 CRS 不可信,按文件名形态强制纠正
 # (hXXvYY -> MODIS 正弦球体 R=6371007.181;其余 -> EPSG:4326)。
 .glass_preview_crs <- function(rr, destname) {
-  cr <- tryCatch(terra::crs(rr, warn = FALSE), error = function(e) "")
+  # terra 1.9.27 起crs() 删除了 warn 参数,传了会报错被 tryCatch 吞掉,
+  # 导致守卫永远不信任 CRS —— 这里必须裸调
+  cr <- tryCatch(terra::crs(rr), error = function(e) "")
   trust <- !is.na(cr) && nzchar(trimws(cr))
   if (trust) {
     ok <- tryCatch({
@@ -80,21 +84,118 @@
   terra::aggregate(rr, f, fun = mean, na.rm = TRUE)
 }
 
+# 枚举一个瓦片的可选预览层(叠加后供“波段”下拉切换):
+# - 有子数据集(HDF4/NetCDF 多变量)时按 SDS 枚举,label 取 varname 冒号后的短名;
+# - 否则按多图层枚举(GeoTIFF 多波段/netCDF 时间层),label 取图层名;
+# - 空名回退 “SDS n/波段 n”;describe/rast 失败回退单层(维持旧行为)。
+# 返回 data.frame(subds, layer, label):subds 为 1 基 SDS 序号(无 SDS 时 NA),
+# layer 为该 SDS/文件内的图层序号,二者一起喂给 .glass_preview_raster。
+.glass_preview_layers <- function(f) {
+  fallback <- data.frame(subds = NA_integer_, layer = 1L,
+                         label = "\u6ce2\u6bb5 1", stringsAsFactors = FALSE)
+  d <- tryCatch(suppressWarnings(terra::describe(f, sds = TRUE)),
+                error = function(e) NULL)
+  if (!is.null(d) && nrow(d) > 0L) {
+    vv <- if (!is.null(d$varname)) d$varname else d$name
+    if (is.null(vv) || !length(vv)) return(fallback)
+    lab <- sub("^.*[:/]", "", vv)
+    bad <- is.na(lab) | !nzchar(lab)
+    lab[bad] <- sprintf("SDS %d", which(bad))
+    data.frame(subds = seq_len(nrow(d)), layer = 1L,
+               label = make.unique(lab, sep = "_"), stringsAsFactors = FALSE)
+  } else {
+    r <- tryCatch(suppressWarnings(terra::rast(f)), error = function(e) NULL)
+    if (is.null(r)) return(fallback)
+    n <- terra::nlyr(r)
+    lab <- terra::names(r)
+    bad <- is.na(lab) | !nzchar(lab)
+    lab[bad] <- sprintf("\u6ce2\u6bb5 %d", which(bad))
+    data.frame(subds = rep(NA_integer_, n), layer = seq_len(n),
+               label = make.unique(lab, sep = "_"), stringsAsFactors = FALSE)
+  }
+}
+
+# 读单个瓦片的指定 SDS/图层;注册表 fill/scale/valid_range 按变体主层测量,
+# 对 QC 等子层不适用时可能把整层洗成 NA —— 此时退回原始值读取,保证预览有东西可看。
+# subds 为 1 基 SDS 序号(整数)或 NULL;SDS 经 terra::sds()[[i]] 选取(1 基,
+# 与 GDAL 子数据集列表一致),不用 rast(subds=) 的数组索引语义。
+.glass_read_layer <- function(f, variant_id, subds = NULL, layer = 1L) {
+  layer <- suppressWarnings(as.integer(layer[1]))
+  if (is.na(layer) || layer < 1L) layer <- 1L
+  sds_idx <- 0L
+  sds_col <- NULL
+  if (!is.null(subds) && length(subds) == 1L && !is.na(subds)) {
+    i <- suppressWarnings(as.integer(subds))
+    if (!is.na(i) && i >= 1L) {
+      sds_col <- tryCatch(suppressWarnings(terra::sds(f)),
+                          error = function(e) NULL)
+      n_sds <- if (is.null(sds_col)) 0L else
+        if (inherits(sds_col, "SpatRaster")) terra::nlyr(sds_col) else
+          length(sds_col)
+      if (i <= n_sds) sds_idx <- i
+    }
+  }
+  pick <- function(r) {
+    n <- terra::nlyr(r)
+    if (n > 1L) r <- r[[min(layer, n)]]
+    r
+  }
+  read_one <- function(raw = FALSE) {
+    if (sds_idx >= 1L) {
+      r1 <- sds_col[[sds_idx]]
+      if (raw) glass_read(r1) else glass_read(r1, product = variant_id)
+    } else {
+      if (raw) glass_read(f) else glass_read(f, product = variant_id)
+    }
+  }
+  r1 <- pick(read_one(FALSE))
+  ok_n <- tryCatch(terra::global(r1, function(x) sum(!is.na(x)))[[1]][1],
+                   error = function(e) 1)
+  if (isTRUE(ok_n == 0)) {
+    message("preview: registry band metadata wipes this layer; reading raw values")
+    r1 <- pick(read_one(raw = TRUE))
+  }
+  r1
+}
+
+# 预览拉伸域:minmax=全值域(leaflet 默认,与旧行为一致);p2_98=2%/98% 分位
+# (geemap COG 路径默认),抗离群值。无有效值时返回 c(0, 1)。
+.glass_preview_domain <- function(v, stretch = c("minmax", "p2_98")) {
+  stretch <- match.arg(stretch)
+  v <- v[is.finite(v)]
+  if (!length(v)) return(c(0, 1))
+  if (identical(stretch, "p2_98")) {
+    as.numeric(stats::quantile(v, c(0.02, 0.98), names = FALSE))
+  } else {
+    c(min(v), max(v))
+  }
+}
+
 # 预览成图管线:glass_read(登记表自填 fill/scale/valid_range) -> 多瓦片合并
 #   -> ROI 外扩 0.5° 裁剪(自动对齐 0..360 约定) -> 长纬投影 + 统一下采样
 #   -> 0..360 绕回 -180..180 -> (to_merc) 再投 webmerc 并控像素。
-# 返回单层 SpatRaster(超过一层 SDS 仅取第一层,帮助文本需注明);
-# to_merc=TRUE 时返回 EPSG:3857,配 leaflet addRasterImage(project=FALSE) 使用
-# ——绝不让 leaflet 内部自行推目标网格(其 std::vector 会爆)。
+# subds/layer 指定渲染的 SDS/图层(可选层由 .glass_preview_layers 枚举);
+# 返回单层 SpatRaster;to_merc=TRUE 时返回 EPSG:3857,配 leaflet
+# addRasterImage(project=FALSE) 使用——绝不让 leaflet 内部自行推目标网格
+# (其 std::vector 会爆)。
 .glass_preview_raster <- function(destfiles, variant_id, roi_bbox = NULL,
-                                  to_merc = TRUE, target_px = 9e5) {
+                                  to_merc = TRUE, target_px = 9e5,
+                                  subds = NULL, layer = 1L) {
   ok <- file.exists(destfiles)
   fl <- destfiles[ok]
   if (!length(fl)) {
     glass_abort("no local granules to preview - out_dir changed or files moved")
   }
   rlist <- lapply(fl, function(f) {
-    r1 <- glass_read(f, product = variant_id)
+    # 单文件读取失败(伴随文件/损坏粒)自动跳过,不拖垮整组;全败才中止
+    r1 <- tryCatch(
+      .glass_read_layer(f, variant_id, subds = subds, layer = layer),
+      error = function(e) {
+        message(sprintf("preview: skipping %s (%s)", basename(f),
+                        conditionMessage(e)))
+        NULL
+      })
+    if (is.null(r1)) return(NULL)
     if (!is.null(roi_bbox) &&
         all(c("xmin", "xmax", "ymin", "ymax") %in% names(roi_bbox))) {
       e <- terra::ext(roi_bbox[["xmin"]] - 0.5, roi_bbox[["xmax"]] + 0.5,
@@ -109,6 +210,10 @@
     }
     r1
   })
+  rlist <- Filter(Negate(is.null), rlist)
+  if (!length(rlist)) {
+    glass_abort("no readable granules to preview - group has only sidecar (.hdf.xml) or damaged files")
+  }
   rr <- if (length(rlist) > 1L) glass_mosaic(rlist) else rlist[[1]]
   if (terra::nlyr(rr) > 1L) rr <- rr[[1]]
   rr <- .glass_preview_crs(rr, fl[1])

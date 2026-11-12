@@ -109,8 +109,11 @@ map header can **overlay a downsampled preview** of the granules on the
 basemap (registry-driven fill/scale, multi-tile mosaics, ROI crop,
 webmerc output, palette + opacity controls), and previously downloaded
 data can be brought in without re-downloading via the **Scan Import**
-folder picker. Requires `shiny` and `leaflet`; the directory browser
-additionally uses `shinyFiles`.
+folder picker. Multi-SDS granules (e.g. the SRF-j components, BBE + QC)
+get a **band dropdown** that switches the rendered SDS/layer without
+re-downloading, plus an optional 2–98% percentile stretch for
+outlier-heavy layers. Requires `shiny` and `leaflet`; the directory
+browser additionally uses `shinyFiles`.
 
 ## GUI front end: D3L Tool
 

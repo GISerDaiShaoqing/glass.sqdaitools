@@ -53,6 +53,8 @@ $R -e 'devtools::document()'        # regenerate man/ + NAMESPACE after roxygen 
 $R -e 'devtools::test()'            # unit tests (add GLASS_SMOKE=1 for network tests)
 $R dev/smoke_test.R                 # offline smoke; GLASS_SMOKE=1 adds end-to-end download
 $R -e 'pkgdown::build_site()'       # rebuild docs/ (rerun after logo or doc changes)
+# 本机注意:build_site 默认子进程偶发段错误(2026-11),失败时改用
+# $R -e 'pkgdown::build_site(preview = FALSE, quiet = TRUE, new_process = FALSE)'
 ```
 
 Full verification before any release: rebuild the tarball and run
@@ -132,6 +134,17 @@ locale leak that breaks child R processes.
   [`utils::browseURL`](https://rdrr.io/r/utils/browseURL.html)(RStudio
   Viewer pane 会吞掉 `target="_blank"` 的新窗)。
 - 进度条只挂 `on.exit(p$close(), add=TRUE)`,不再显式 close(双关闭警告)。
+- **预览选层(0.6.0)**:多 SDS/多图层文件由 `.glass_preview_layers()`
+  枚举; 多变量 SDS 读取走 `terra::sds(f)[[i]]`(1 基;勿用 `rast(subds=n)`
+  的数组 索引语义,单变量 netCDF 会报 “array index out of range”);单变量
+  netCDF 无子数据集,`describe(sds=TRUE)`
+  直接报错,枚举回退时间层分支。注册表 fill/scale/valid_range
+  按变体主层测量,QC 类子层会被整层洗 NA, `.glass_read_layer()` 检测到全
+  NA 自动退回原始值读取。2–98% 分位拉伸 (对齐 geemap COG 默认)由
+  `.glass_preview_domain()` + leaflet 颜色函数实现。 机器注记:terra
+  1.9.27 的 `global(x, "isnotNA")` 报 “could not find function
+  fun”,统计须传匿名函数;`expect_message()` 返回消息对象本身,
+  要拿表达式值须 `expect_message(v <- ...)`。
 
 ## Release checklist
 
