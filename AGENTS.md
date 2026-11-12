@@ -144,15 +144,16 @@ locale leak that breaks child R processes.
    `usethis::use_version`).
 5. Maintainer commits, tags (`vX.Y.Z`) and pushes personally.
 
-注:许可证布局遵循 R/CRAN 惯例——`License: MIT + file LICENSE`,根目录
-`LICENSE` 为 DCF 两行桩(YEAR/COPYRIGHT HOLDER,`R CMD check` 的 0-note
-要求),`LICENSE.md` 为完整 MIT 正文。**GitHub 徽章判定(licensee)不看
-DESCRIPTION**:桩文件命中 Copyright 匹配器被剔除,MIT 由 `LICENSE.md`
-提供;但若 `docs/LICENSE{,-text}.{html,md}`(pkgdown 生成的四类许可页)
-任何一个匹配不成 MIT(HTML 模板或桩文本都会),即产生 'other' 候选,与
-MIT 并存 → 多候选 → 徽章 "Other"(2026-11 实测:只重写 .html 两个,残留
-的 .md 页仍判 other,徽章未恢复——**四个必须全覆盖**)。解法见
-`dev/build_site.R`(构建后把四页统一重写为纯 MIT 全文,Exact 匹配 →
-唯一 MIT 候选)。勿运行
-`usethis::use_mit_license()`(会重置 `LICENSE` 为桩并把 DESCRIPTION 换成
-其它措辞,引起额外 NOTE);站点重建只走 `dev/build_site.R`。
+注:**GitHub 许可证徽章(MIT)优先,布局对齐 rstudio/renv**——根目录
+`LICENSE` = 完整 MIT 正文(renv 式:无标题行,以
+`Copyright (c) <year> <holder>` 开头,正文按 `share/licenses/MIT` 模板
+填值);DESCRIPTION 仍为 `License: MIT + file LICENSE`;`LICENSE.md` 为
+同文备份。**已知代价**:`R CMD check` 有 1 条 NOTE "License stub is
+invalid DCF"(R 对 `+ file LICENSE` 一律要求 DCF 桩,全文无法两全,
+renv 同款;门禁 0 error/0 warning 不受影响)。**GitHub 判定(licensee)
+只认根目录 `LICENSE` 内容**:桩会被判 'other' → 徽章 Other(usethis/
+devtools 的 API license 字段实为 other,即证据);此外 pkgdown 生成的
+`docs/LICENSE{,-text}.{html,md}` 四个许可页必须全部归一为纯 MIT 全文,
+任何一个匹配失败都会以多候选把徽章打回 Other——由 `dev/build_site.R`
+构建后自动重写,勿手改、勿绕过该入口。勿运行
+`usethis::use_mit_license()`(会把 LICENSE 重置回两行桩)。
