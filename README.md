@@ -17,15 +17,6 @@
 | ORCID   | [0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728) |
 | License | MIT                                                          |
 
-| 项目    | 信息                                                         |
-|:--------|:-------------------------------------------------------------|
-| 作者    | Shaoqing Dai                                                 |
-| 主页    | <https://gisersqdai.top/mycv/>                               |
-| GitHub  | [@GISerDaiShaoqing](https://github.com/GISerDaiShaoqing)     |
-| E-mail  | <dsq1993qingge@163.com>                                      |
-| ORCID   | [0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728) |
-| License | MIT                                                          |
-
 **glass.sqdaitools** is a toolkit for the whole GLASS data lifecycle:
 query products from the [GLASS archive](https://glass.hku.hk/archive/),
 map your region of interest onto the `h<h>v<v>` sinusoidal tiling,
