@@ -212,7 +212,7 @@ ui <- bslib::page_fillable(
                 leaflet::leafletOutput("map", height = "100%"),
                 bslib::card_footer(
                   shiny::span(class = "text-muted small",
-                              "底图:Esri World Imagery(WGS84)/ 高德街道(GCJ-02,偏移约 500 m);瓦片以绿色半透明显示。"))),
+                              "底图 6 种可切换:除高德为 GCJ-02(偏移约 500 m)外,其余均为 WGS84 无偏移;预览瓦片以半透明显示。"))),
     # 文件清单(填满剩余高度;头部为状态芯片条)
     bslib::card(class = "glass-card mt-2",
                 fill = TRUE,
@@ -271,8 +271,35 @@ server <- function(input, output, session) {
         group = "高德街道(GCJ-02 有偏移)",
         attribution = "Amap"
       ) |>
+      leaflet::addTiles(
+        urlTemplate = "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        group = "OSM 标准(WGS84)",
+        attribution = "&copy; OpenStreetMap contributors"
+      ) |>
+      leaflet::addTiles(
+        urlTemplate = paste0(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/",
+          "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"),
+        group = "Esri 浅灰(WGS84)",
+        attribution = "Esri"
+      ) |>
+      leaflet::addTiles(
+        urlTemplate = paste0(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/",
+          "Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"),
+        group = "Esri 深灰(WGS84)",
+        attribution = "Esri"
+      ) |>
+      leaflet::addTiles(
+        urlTemplate = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        options = leaflet::tileOptions(subdomains = "abc"),
+        group = "OpenTopoMap 地形(WGS84)",
+        attribution = "&copy; OpenTopoMap (CC-BY-SA)"
+      ) |>
       leaflet::addLayersControl(
-        baseGroups = c("ArcGIS 影像(WGS84)", "高德街道(GCJ-02 有偏移)"),
+        baseGroups = c("ArcGIS 影像(WGS84)", "高德街道(GCJ-02 有偏移)",
+                       "OSM 标准(WGS84)", "Esri 浅灰(WGS84)",
+                       "Esri 深灰(WGS84)", "OpenTopoMap 地形(WGS84)"),
         overlayGroups = "产品预览",
         options = leaflet::layersControlOptions(collapsed = FALSE)
       ) |>

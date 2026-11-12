@@ -12,3 +12,6 @@ zcode/
 glass_download_vi.R
 glass_process.R
 output/
+
+# R 包构建产物(tarball 由 R CMD build 生成于仓库根)
+*.tar.gz

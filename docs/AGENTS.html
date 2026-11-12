@@ -88,9 +88,10 @@
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="va">$R</span> <span class="at">-e</span> <span class="st">'devtools::document()'</span>        <span class="co"># regenerate man/ + NAMESPACE after roxygen edits</span></span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="va">$R</span> <span class="at">-e</span> <span class="st">'devtools::test()'</span>            <span class="co"># unit tests (add GLASS_SMOKE=1 for network tests)</span></span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="va">$R</span> dev/smoke_test.R                 <span class="co"># offline smoke; GLASS_SMOKE=1 adds end-to-end download</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="va">$R</span> <span class="at">-e</span> <span class="st">'pkgdown::build_site()'</span>       <span class="co"># rebuild docs/ (rerun after logo or doc changes)</span></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># 本机注意:build_site 默认子进程偶发段错误(2026-11),失败时改用</span></span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co"># $R -e 'pkgdown::build_site(preview = FALSE, quiet = TRUE, new_process = FALSE)'</span></span></code></pre></div>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="va">$R</span> dev/build_site.R                 <span class="co"># rebuild docs/ (rerun after logo or doc changes)</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># 本机注意:build_site 默认子进程偶发段错误(2026-11),包装脚本已固定</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co"># new_process = FALSE,并在构建后把 docs/LICENSE*.html 重写为纯 MIT 文本</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co"># (保持 GitHub 许可证徽章为 MIT,原因见下方许可证注记)——务必走此入口。</span></span></code></pre></div>
 <p>Full verification before any release: rebuild the tarball and run <code>R CMD check</code> (must stay 0 errors / 0 warnings). On this machine run R commands with <code>env -u LC_CTYPE -u LC_ALL -u LANG</code> to avoid the Git Bash locale leak that breaks child R processes.</p>
 </div>
 <div class="section level2">
@@ -142,7 +143,8 @@
 <code><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">pkgdown::build_site()</a></code> refreshed and <code>docs/</code> updated.</li>
 <li>Bump <code>Version</code> in DESCRIPTION (maintainer decides; suggest <code><a href="https://usethis.r-lib.org/reference/use_version.html" class="external-link">usethis::use_version</a></code>).</li>
 <li>Maintainer commits, tags (<code>vX.Y.Z</code>) and pushes personally.</li>
-</ol></div>
+</ol><p>注:许可证布局遵循 R/CRAN 惯例——<code>License: MIT + file LICENSE</code>,根目录 <code>LICENSE</code> 为 DCF 两行桩(YEAR/COPYRIGHT HOLDER,<code>R CMD check</code> 的 0-note 要求),<code>LICENSE.md</code> 为完整 MIT 正文。<strong>GitHub 徽章判定(licensee)不看 DESCRIPTION</strong>:桩文件命中 Copyright 匹配器被剔除,MIT 由 <code>LICENSE.md</code> 提供;但若 <code>docs/LICENSE*.html</code>(pkgdown 页面)以 HTML 形态入库,其内容 Dice 匹配失败 → 判 ‘other’,与 MIT 并存即多候选 → 徽章 “Other” (2026-11 实测,r-lib 系无 docs/ 故无此问题)。解法见 <code>dev/build_site.R</code> (构建后把这两页重写为纯 MIT 文本,Exact 匹配 → 唯一 MIT 候选)。勿运行 <code><a href="https://usethis.r-lib.org/reference/licenses.html" class="external-link">usethis::use_mit_license()</a></code>(会重置 <code>LICENSE</code> 为桩并把 DESCRIPTION 换成 其它措辞,引起额外 NOTE);站点重建只走 <code>dev/build_site.R</code>。</p>
+</div>
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
