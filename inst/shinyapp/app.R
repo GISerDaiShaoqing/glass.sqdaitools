@@ -168,7 +168,7 @@ ui <- bslib::page_fillable(
                                                  .jump_link("https://gisersqdai.top/glass.sqdaitools/",
                                                             "本包文档", ic = "box"),
                                                  .jump_link("https://gisersqdai.top/D3LTool/",
-                                                            "D3L Tool v2.7.0", ic = "desktop"),
+                                                            "D3L Tool v2.8.0", ic = "desktop"),
                                                  .jump_link("https://glass.hku.hk/",
                                                             "GLASS 官网", ic = "globe"))))),
     # 主区地图(随窗口伸缩,52% 视口高)

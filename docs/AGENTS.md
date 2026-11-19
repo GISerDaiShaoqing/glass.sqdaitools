@@ -54,8 +54,9 @@ $R -e 'devtools::test()'            # unit tests (add GLASS_SMOKE=1 for network 
 $R dev/smoke_test.R                 # offline smoke; GLASS_SMOKE=1 adds end-to-end download
 $R dev/build_site.R                 # rebuild docs/ (rerun after logo or doc changes)
 # 本机注意:build_site 默认子进程偶发段错误(2026-11),包装脚本已固定
-# new_process = FALSE,并在构建后把 docs/LICENSE*.html 重写为纯 MIT 文本
-# (保持 GitHub 许可证徽章为 MIT,原因见下方许可证注记)——务必走此入口。
+# new_process = FALSE,并在构建后把 docs/LICENSE{,-text}.{html,md} 四页
+# 重写为纯 MIT 文本(保持 GitHub 许可证徽章为 MIT,原因见下方许可证
+# 注记)——务必走此入口。
 ```
 
 Full verification before any release: rebuild the tarball and run
@@ -115,7 +116,7 @@ locale leak that breaks child R processes.
 
 - `README.Rmd` 是 `README.md` 的源头;改 README 一律改 `.Rmd` 再 knit,
   不直接手编 `README.md`。
-- D3L Tool 的版本承诺以 README 文字为准(已对齐 **v2.7.0**); D3LTool
+- D3L Tool 的版本承诺以 README 文字为准(已对齐 **v2.8.0**); D3LTool
   发新版时:改 `README.Rmd` → knit →(可选)app 徽章带版本 →
   [`pkgdown::build_site()`](https://pkgdown.r-lib.org/reference/build_site.html)。
 - pkgdown 的 `docs/` 是构建产物且入库;description 版本、man 页更新后必须
@@ -159,14 +160,17 @@ locale leak that breaks child R processes.
     [`usethis::use_version`](https://usethis.r-lib.org/reference/use_version.html)).
 5.  Maintainer commits, tags (`vX.Y.Z`) and pushes personally.
 
-注:许可证布局遵循 R/CRAN 惯例——`License: MIT + file LICENSE`,根目录
-`LICENSE` 为 DCF 两行桩(YEAR/COPYRIGHT HOLDER,`R CMD check` 的 0-note
-要求),`LICENSE.md` 为完整 MIT 正文。**GitHub 徽章判定(licensee)不看
-DESCRIPTION**:桩文件命中 Copyright 匹配器被剔除,MIT 由 `LICENSE.md`
-提供;但若 `docs/LICENSE*.html`(pkgdown 页面)以 HTML 形态入库,其内容 Dice
-匹配失败 → 判 ‘other’,与 MIT 并存即多候选 → 徽章 “Other” (2026-11
-实测,r-lib 系无 docs/ 故无此问题)。解法见 `dev/build_site.R`
-(构建后把这两页重写为纯 MIT 文本,Exact 匹配 → 唯一 MIT 候选)。勿运行
-[`usethis::use_mit_license()`](https://usethis.r-lib.org/reference/licenses.html)(会重置
-`LICENSE` 为桩并把 DESCRIPTION 换成 其它措辞,引起额外 NOTE);站点重建只走
-`dev/build_site.R`。
+注:**GitHub 许可证徽章(MIT)优先,布局对齐 rstudio/renv**——根目录
+`LICENSE` = 完整 MIT 正文(renv 式:无标题行,以
+`Copyright (c) <year> <holder>` 开头,正文按 `share/licenses/MIT` 模板
+填值);DESCRIPTION 仍为 `License: MIT + file LICENSE`;`LICENSE.md` 为
+同文备份。**已知代价**:`R CMD check` 有 1 条 NOTE “License stub is
+invalid DCF”(R 对 `+ file LICENSE` 一律要求 DCF 桩,全文无法两全, renv
+同款;门禁 0 error/0 warning 不受影响)。**GitHub 判定(licensee)
+只认根目录 `LICENSE` 内容**:桩会被判 ‘other’ → 徽章 Other(usethis/
+devtools 的 API license 字段实为 other,即证据);此外 pkgdown 生成的
+`docs/LICENSE{,-text}.{html,md}` 四个许可页必须全部归一为纯 MIT 全文,
+任何一个匹配失败都会以多候选把徽章打回 Other——由 `dev/build_site.R`
+构建后自动重写,勿手改、勿绕过该入口。勿运行
+[`usethis::use_mit_license()`](https://usethis.r-lib.org/reference/licenses.html)(会把
+LICENSE 重置回两行桩)。
